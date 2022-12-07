@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+            path: 'meta-slint'
+      - run: |
+        git clone -b kirkstone --single-branch git://git.yoctoproject.org/poky
+        git clone -b kirkstone --single-branch git://git.openembedded.org/meta-openembedded
+        git clone -b master --single-branch https://github.com/meta-rust/meta-rust.git
+      - run: |
+          cd poky
+          . oe-init-build-env
+          bitbake-layers add-layer ../../meta-openembedded/meta-oe
+          bitbake-layers add-layer ../../meta-rust
+          bitbake-layers add-layer ../../meta-slint
+          echo 'PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"' >> conf/local.conf
+          echo 'BBMASK += "poky/meta/recipes-devtools/rust"' >> config/local.conf
+          echo 'BBMASK += "poky/meta/recipes-devtools/cargo"' >> config/local.conf
+          echo 'RUST_PANIC_STRATEGY = "abort"' >> config/local.conf
+      - run: |
+          cd poky
+          . oe-init-build-env
+          bitbake slint
