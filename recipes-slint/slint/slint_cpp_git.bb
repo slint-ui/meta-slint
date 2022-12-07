@@ -12,7 +12,7 @@ LIC_FILES_CHKSUM="file://LICENSE.md;md5=29c2662b4609df90253e15270c25629d"
 
 inherit cmake
 
-DEPENDS = "fontconfig libxcb wayland"
+DEPENDS = "fontconfig libxcb wayland clang-cross-${TARGET_ARCH}"
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;rev=v0.3.2"
 PV = "slint-cpp-${SRCPV}"
