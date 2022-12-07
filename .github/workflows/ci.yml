@@ -29,6 +29,7 @@ jobs:
           echo 'BBMASK += "poky/meta/recipes-devtools/rust"' >> conf/local.conf
           echo 'BBMASK += "poky/meta/recipes-devtools/cargo"' >> conf/local.conf
           echo 'RUST_PANIC_STRATEGY = "abort"' >> conf/local.conf
+          echo 'MACHINE = "qemuarm64"' >> conf/local.conf
       - run: |
           cd poky
           . oe-init-build-env
