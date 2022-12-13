@@ -47,5 +47,24 @@ EXTRA_OECMAKE:append = " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF"
 EXTRA_OECMAKE:append = " -DBUILD_TESTING=OFF -DSLINT_BUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo"
 EXTRA_OECMAKE:append = " -DCMAKE_DISABLE_FIND_PACKAGE_Qt5=true -DSLINT_FEATURE_BACKEND_QT=OFF"
 EXTRA_OECMAKE:append = " -DSLINT_FEATURE_BACKEND_WINIT=OFF -DSLINT_FEATURE_BACKEND_WINIT_WAYLAND=ON"
-EXTRA_OECMAKE:append = " -DSLINT_FEATURE_RENDERER_WINIT_FEMTOVG=ON"
+EXTRA_OECMAKE:append = " -DSLINT_FEATURE_RENDERER_WINIT_FEMTOVG=OFF -DSLINT_FEATURE_RENDERER_WINIT_SKIA=ON"
 
+# Emulate what clang-environment.inc does.
+
+export TARGET_CLANGCC_ARCH = "${TARGET_CC_ARCH}"
+TARGET_CLANGCC_ARCH:remove = "-mthumb-interwork"
+TARGET_CLANGCC_ARCH:remove = "-mmusl"
+TARGET_CLANGCC_ARCH:remove = "-muclibc"
+TARGET_CLANGCC_ARCH:remove = "-meb"
+TARGET_CLANGCC_ARCH:remove = "-mel"
+TARGET_CLANGCC_ARCH:append = "${@bb.utils.contains("TUNE_FEATURES", "bigendian", " -mbig-endian", " -mlittle-endian", d)}"
+TARGET_CLANGCC_ARCH:remove:powerpc = "-mhard-float"
+TARGET_CLANGCC_ARCH:remove:powerpc = "-mno-spe"
+
+# Add -I=/usr/include/freetype2 as skia has hardcoded it to -I/usr/include/freetype2, which
+# would locate freetype in the host system, not the sysroot target.
+export CLANGCC="${TARGET_PREFIX}clang --target=${TARGET_SYS} ${TARGET_CLANGCC_ARCH} --sysroot=${STAGING_DIR_TARGET}  -I=/usr/include/freetype2"
+export CLANGCXX="${TARGET_PREFIX}clang++ --target=${TARGET_SYS} ${TARGET_CLANGCC_ARCH} --sysroot=${STAGING_DIR_TARGET}  -I=/usr/include/freetype2"
+export CLANGCPP="${TARGET_PREFIX}clang -E --target=${TARGET_SYS} ${TARGET_CLANGCC_ARCH} --sysroot=${STAGING_DIR_TARGET}  -I=/usr/include/freetype2"
+export CLANG_TIDY_EXE="${TARGET_PREFIX}clang-tidy"
+export SDKTARGETSYSROOT="${PKG_CONFIG_SYSROOT_DIR}"
