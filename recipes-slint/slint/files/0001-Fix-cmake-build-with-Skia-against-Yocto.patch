@@ -1,0 +1,23 @@
+From 9452097daece18bf15767f36e084721744ecc9ca Mon Sep 17 00:00:00 2001
+From: Simon Hausmann <simon.hausmann@slint-ui.com>
+Date: Tue, 13 Dec 2022 17:06:09 +0100
+Subject: [PATCH] Fix cmake build with Skia against Yocto
+
+Patch in Skia from git for a fix for improved target triplet parsing.
+---
+ Cargo.toml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 039e10d31..bc8d1aecd 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -94,3 +94,5 @@ panic = "abort"
+ [patch.crates-io]
+ # Pull in fix for https://github.com/john01dav/softbuffer/issues/22
+ softbuffer = { git = "https://github.com/slint-ui/softbuffer", branch = "simon/macos-scale-fix" }
++# Pull in https://github.com/rust-skia/rust-skia/pull/744
++skia-safe = { git = "https://github.com/rust-skia/rust-skia", rev = "1618a8bea1ac3c5abbf6eabbeb6ba3046137621b" }
+-- 
+2.37.1 (Apple Git-137.1)
+

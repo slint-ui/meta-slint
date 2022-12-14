@@ -16,7 +16,8 @@ REQUIRED_DISTRO_FEATURES = "opengl"
 
 DEPENDS = "fontconfig libxcb wayland clang-cross-${TARGET_ARCH} virtual/libgl"
 
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=simon/skia-yocto-fixes;rev=e7aba62eada8dc1598077c7bb1a0c5f679364a12"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
+SRC_URI += "file://0001-Fix-cmake-build-with-Skia-against-Yocto.patch"
 PV = "slint-cpp-${SRCPV}"
 
 S = "${WORKDIR}/git"
