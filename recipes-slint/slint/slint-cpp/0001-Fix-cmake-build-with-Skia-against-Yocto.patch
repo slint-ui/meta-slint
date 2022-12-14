@@ -16,8 +16,8 @@ index 039e10d31..bc8d1aecd 100644
  [patch.crates-io]
  # Pull in fix for https://github.com/john01dav/softbuffer/issues/22
  softbuffer = { git = "https://github.com/slint-ui/softbuffer", branch = "simon/macos-scale-fix" }
-+# Pull in https://github.com/rust-skia/rust-skia/pull/744
-+skia-safe = { git = "https://github.com/rust-skia/rust-skia", rev = "1618a8bea1ac3c5abbf6eabbeb6ba3046137621b" }
++# Pull in https://github.com/rust-skia/rust-skia/pull/745
++skia-safe = { git = "https://github.com/slint-ui/rust-skia", rev = "4a6906396a4ec900d2146c9c664da686f862621a" }
 -- 
 2.37.1 (Apple Git-137.1)
 
