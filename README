@@ -1,41 +1,12 @@
-This README file contains information on the contents of the meta-slint layer.
-
-Please see the corresponding sections below for details.
-
-Dependencies
-============
-
-  URI: <first dependency>
-  branch: <branch name>
-
-  URI: <second dependency>
-  branch: <branch name>
-
-  .
-  .
-  .
-
-Patches
-=======
-
-Please submit any patches against the meta-slint layer to the xxxx mailing list (xxxx@zzzz.org)
-and cc: the maintainer:
-
-Maintainer: XXX YYYYYY <xxx.yyyyyy@zzzzz.com>
-
-Table of Contents
-=================
-
-  I. Adding the meta-slint layer to your build
- II. Misc
-
-
-I. Adding the meta-slint layer to your build
-=================================================
-
-Run 'bitbake-layers add-layer meta-slint'
-
-II. Misc
-========
-
---- replace with specific information about the meta-slint layer ---
+Meta-slint requires:  
+  
+```
+meta-openembedded/meta-oe  
+meta-rust  
+meta-clang  
+meta-slint  
+```
+Check the [layer.conf](conf/layer.conf) LAYERSERIES_COMPAT_meta for yocto version compatibility   
+  
+For local version locking just copy the slint-cpp_x.x.x.bb and modify the SLINT_REV 
+and set PREFERRED_VERSION_slint-cpp = "x.x.x"
