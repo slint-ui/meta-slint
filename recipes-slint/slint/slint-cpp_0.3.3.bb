@@ -1,5 +1,4 @@
 require recipes-slint/slint/slint-cpp.inc
 
-#TODO Update to real 0.3.3 release
-
-SLINT_REV = "aea216fb492f9892f89fdd2764ecd98d019e6cdd"
+# v0.3.3 tag
+SLINT_REV = "29b17fd10977a3da6c01c8a9df27b5ba642d06a7"
