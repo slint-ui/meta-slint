@@ -8,7 +8,7 @@ HOMEPAGE = "https://github.com/slint-ui/slint"
 BUGTRACKER = "https://github.com/slint-ui/slint/issues"
 
 LICENSE = "GPLv3 | Slint-Commercial"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=29c2662b4609df90253e15270c25629d"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a71019dc9c240d7add35e9d036870929"
 
 inherit cmake
 
@@ -18,7 +18,6 @@ DEPENDS = "fontconfig libxcb wayland clang-cross-${TARGET_ARCH} virtual/libgl"
 
 SLINT_REV ?= "master"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=${SLINT_REV}"
-SRC_URI += "file://0001-Fix-cmake-build-with-Skia-against-Yocto.patch"
 
 
 S = "${WORKDIR}/git"
