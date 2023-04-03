@@ -48,9 +48,9 @@ do_install() {
     DESTDIR="${D}" cmake -P ${B}/cmake_install.cmake
 
     # Slint is not installing proper versioned .so files/symlinks yet, do it by hand:
-    mv ${D}/usr/lib/libslint_cpp.so ${D}/usr/lib/libslint_cpp.so.0.1.0
-    ln -s libslint_cpp.so.0.1.0 ${D}/usr/lib/libslint_cpp.so.0.1
-    ln -s libslint_cpp.so.0.1.0 ${D}/usr/lib/libslint_cpp.so
+    mv ${D}/usr/lib/libslint_cpp.so ${D}/usr/lib/libslint_cpp.so.1.0.0
+    ln -s libslint_cpp.so.1.0.0 ${D}/usr/lib/libslint_cpp.so.1.0
+    ln -s libslint_cpp.so.1.0.0 ${D}/usr/lib/libslint_cpp.so
 
     # Set permision without run flag so that it doesn't fail on checks
     chmod 644 ${D}/usr/bin/slint-compiler
