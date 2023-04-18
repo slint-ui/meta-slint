@@ -11,6 +11,6 @@ PROVIDES:prepend = "${PN}-native-bin "
 INSANE_SKIP:${PN}-native-bin = "arch"
 FILES:${PN}-native-bin = "/usr/bin/slint-compiler"
 
-RPROVIDES:${PN} += " libslint_cpp.so.0.1()(64bit)"
+RPROVIDES:${PN} += " libslint_cpp.so.1.0()(64bit)"
 
 SYSROOT_DIRS += "/"
