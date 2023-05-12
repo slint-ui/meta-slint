@@ -57,6 +57,7 @@ do_install() {
 }
 
 EXTRA_OECMAKE:append:aarch64 = " -DRust_CARGO_TARGET=aarch64-poky-linux"
+EXTRA_OECMAKE:append:arm = " -DRust_CARGO_TARGET=arm-poky-linux-gnueabi"
 
 EXTRA_OECMAKE:append = " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF"
 EXTRA_OECMAKE:append = " -DBUILD_TESTING=OFF -DSLINT_BUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo"
