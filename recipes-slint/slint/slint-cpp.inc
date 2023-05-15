@@ -40,6 +40,9 @@ do_compile:prepend() {
     oe_cargo_fix_env
     export RUSTFLAGS="${RUSTFLAGS}"
     export RUST_TARGET_PATH="${RUST_TARGET_PATH}"
+    # Make sure that Skia's invocation of clang to generate bindings.rs for the Skia headers
+    # passes the right flags, in particular float abi selection
+    export BINDGEN_EXTRA_CLANG_ARGS="${HOST_CC_ARCH} ${TOOLCHAIN_OPTIONS} ${TARGET_CFLAGS}"
 }
 
 do_install() {
@@ -56,8 +59,13 @@ do_install() {
     chmod 644 ${D}/usr/bin/slint-compiler
 }
 
-EXTRA_OECMAKE:append:aarch64 = " -DRust_CARGO_TARGET=aarch64-poky-linux"
-EXTRA_OECMAKE:append:arm = " -DRust_CARGO_TARGET=arm-poky-linux-gnueabi"
+# Usually OE_CMAKE_C_COMPILER is just say `arm-poky-linux-gcc`, but we need the original `${CC}` that includes
+# options like -mfloat-abi. This is taken into use when compiling Rust Skia's bindings.cpp (the manual part),
+# where OECMAKE_CXX_COMPILER becomes CMAKE_CXX_COMPILER, and Corrison turns it into CXX_<triplet>.
+OECMAKE_C_COMPILER = "${RUST_TARGET_CC}"
+OECMAKE_CXX_COMPILER = "${RUST_TARGET_CXX}"
+
+EXTRA_OECMAKE:append = " -DRust_CARGO_TARGET=${HOST_SYS}"
 
 EXTRA_OECMAKE:append = " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF"
 EXTRA_OECMAKE:append = " -DBUILD_TESTING=OFF -DSLINT_BUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo"
