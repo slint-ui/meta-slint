@@ -1,7 +1,7 @@
 inherit cargo
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;rev=master"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a71019dc9c240d7add35e9d036870929"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=4f9282cc0add078ee5638e65bb55c77c"
 
 SUMMARY = "Slint Demos"
 HOMEPAGE = "https://slint-ui.com/"
