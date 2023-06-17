@@ -7,7 +7,7 @@ SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=
 SUMMARY = "Slint Hello World"
 HOMEPAGE = "https://github.com/slint-ui/slint"
 LICENSE = "GPLv3 | Slint-Commercial"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a71019dc9c240d7add35e9d036870929"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=4f9282cc0add078ee5638e65bb55c77c"
 
 DEPENDS = "slint-cpp"
 
