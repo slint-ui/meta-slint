@@ -1,7 +1,7 @@
 
 REQUIRED_DISTRO_FEATURES = "opengl"
 
-DEPENDS = "fontconfig libxcb wayland clang-cross-${TARGET_ARCH} virtual/libgl"
+DEPENDS += "fontconfig libxcb wayland clang-cross-${TARGET_ARCH} virtual/libgl"
 
 do_compile:prepend() {
     export RUST_FONTCONFIG_DLOPEN=on
