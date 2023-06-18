@@ -11,10 +11,7 @@ LICENSE = "GPLv3 | Slint-Commercial"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a71019dc9c240d7add35e9d036870929"
 
 inherit cmake
-
-REQUIRED_DISTRO_FEATURES = "opengl"
-
-DEPENDS = "fontconfig libxcb wayland clang-cross-${TARGET_ARCH} virtual/libgl"
+inherit slint_common
 
 SLINT_REV ?= "master"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=${SLINT_REV}"
@@ -33,16 +30,6 @@ do_configure() {
     echo "set(CMAKE_SYSROOT \"${RECIPE_SYSROOT}\")" >> ${WORKDIR}/toolchain.cmake
     cargo_common_do_configure
     cmake_do_configure
-}
-
-do_compile:prepend() {
-    export RUST_FONTCONFIG_DLOPEN=on
-    oe_cargo_fix_env
-    export RUSTFLAGS="${RUSTFLAGS}"
-    export RUST_TARGET_PATH="${RUST_TARGET_PATH}"
-    # Make sure that Skia's invocation of clang to generate bindings.rs for the Skia headers
-    # passes the right flags, in particular float abi selection
-    export BINDGEN_EXTRA_CLANG_ARGS="${HOST_CC_ARCH} ${TOOLCHAIN_OPTIONS} ${TARGET_CFLAGS}"
 }
 
 do_install() {
@@ -73,22 +60,3 @@ EXTRA_OECMAKE:append = " -DCMAKE_DISABLE_FIND_PACKAGE_Qt5=true -DSLINT_FEATURE_B
 EXTRA_OECMAKE:append = " -DSLINT_FEATURE_BACKEND_WINIT=OFF -DSLINT_FEATURE_BACKEND_WINIT_WAYLAND=ON"
 EXTRA_OECMAKE:append = " -DSLINT_FEATURE_RENDERER_WINIT_FEMTOVG=OFF -DSLINT_FEATURE_RENDERER_WINIT_SKIA=ON"
 
-# Emulate what clang-environment.inc does.
-
-export TARGET_CLANGCC_ARCH = "${TARGET_CC_ARCH}"
-TARGET_CLANGCC_ARCH:remove = "-mthumb-interwork"
-TARGET_CLANGCC_ARCH:remove = "-mmusl"
-TARGET_CLANGCC_ARCH:remove = "-muclibc"
-TARGET_CLANGCC_ARCH:remove = "-meb"
-TARGET_CLANGCC_ARCH:remove = "-mel"
-TARGET_CLANGCC_ARCH:append = "${@bb.utils.contains("TUNE_FEATURES", "bigendian", " -mbig-endian", " -mlittle-endian", d)}"
-TARGET_CLANGCC_ARCH:remove:powerpc = "-mhard-float"
-TARGET_CLANGCC_ARCH:remove:powerpc = "-mno-spe"
-
-# Add -I=/usr/include/freetype2 as skia has hardcoded it to -I/usr/include/freetype2, which
-# would locate freetype in the host system, not the sysroot target.
-export CLANGCC="${TARGET_PREFIX}clang --target=${TARGET_SYS} ${TARGET_CLANGCC_ARCH} --sysroot=${STAGING_DIR_TARGET}  -I=/usr/include/freetype2"
-export CLANGCXX="${TARGET_PREFIX}clang++ --target=${TARGET_SYS} ${TARGET_CLANGCC_ARCH} --sysroot=${STAGING_DIR_TARGET}  -I=/usr/include/freetype2"
-export CLANGCPP="${TARGET_PREFIX}clang -E --target=${TARGET_SYS} ${TARGET_CLANGCC_ARCH} --sysroot=${STAGING_DIR_TARGET}  -I=/usr/include/freetype2"
-export CLANG_TIDY_EXE="${TARGET_PREFIX}clang-tidy"
-export SDKTARGETSYSROOT="${PKG_CONFIG_SYSROOT_DIR}"

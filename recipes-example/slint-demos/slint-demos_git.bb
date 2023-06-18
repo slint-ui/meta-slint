@@ -8,6 +8,8 @@ SUMMARY = "Slint Demos"
 HOMEPAGE = "https://slint-ui.com/"
 LICENSE = "GPLv3 | Slint-Commercial"
 
+inherit slint_common
+
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
 
 do_configure[network] = "1"
@@ -18,7 +20,5 @@ S = "${WORKDIR}/git"
 BBCLASSEXTEND = "native"
 
 do_compile() {
-    export RUST_FONTCONFIG_DLOPEN=on
-    oe_cargo_fix_env
-    oe_cargo_build -p energy-monitor -p slide_puzzle -p printerdemo -p gallery
+    oe_cargo_build --features slint/renderer-winit-skia -p energy-monitor -p slide_puzzle -p printerdemo -p gallery
 }
