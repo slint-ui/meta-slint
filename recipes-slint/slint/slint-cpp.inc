@@ -5,8 +5,7 @@ DESCRIPTION = "Slint is a toolkit to efficiently develop fluid graphical \
 user interfaces for any display: embedded devices and desktop applications. \
 We support multiple programming languages, such as Rust, C++, and JavaScript. \
 This recipe is the C++/CMake package of Slint. For Rust application, use the slint \
-crate from crates.io.
-"
+crate from crates.io."
 HOMEPAGE = "https://github.com/slint-ui/slint"
 BUGTRACKER = "https://github.com/slint-ui/slint/issues"
 
@@ -21,7 +20,7 @@ SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=
 
 
 S = "${WORKDIR}/git"
-	
+
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
 
 # For FetchContent of corrosion
