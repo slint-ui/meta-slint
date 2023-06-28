@@ -22,5 +22,5 @@ S = "${WORKDIR}/git"
 BBCLASSEXTEND = "native"
 
 do_compile() {
-    oe_cargo_build --features slint/renderer-winit-skia -p energy-monitor -p slide_puzzle -p printerdemo -p gallery
+    oe_cargo_build --features slint/renderer-winit-skia -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
 }
