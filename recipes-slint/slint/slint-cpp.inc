@@ -1,9 +1,12 @@
 inherit cargo
 
-SUMMARY = "UI Toolkit"
+SUMMARY = "Slint C++ UI Toolkit"
 DESCRIPTION = "Slint is a toolkit to efficiently develop fluid graphical \
 user interfaces for any display: embedded devices and desktop applications. \
-We support multiple programming languages, such as Rust, C++, and JavaScript."
+We support multiple programming languages, such as Rust, C++, and JavaScript. \
+This recipe is the C++/CMake package of Slint. For Rust application, use the slint \
+crate from crates.io.
+"
 HOMEPAGE = "https://github.com/slint-ui/slint"
 BUGTRACKER = "https://github.com/slint-ui/slint/issues"
 
