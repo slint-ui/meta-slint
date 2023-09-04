@@ -1,4 +1,4 @@
-From 947387db55cb8273415b2938249b3b0883d0fe43 Mon Sep 17 00:00:00 2001
+From 06b7ebe03492db3260be5f3e91dfec852d6a17b7 Mon Sep 17 00:00:00 2001
 From: Simon Hausmann <simon.hausmann@slint-ui.com>
 Date: Sun, 18 Jun 2023 11:35:07 +0200
 Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
@@ -9,12 +9,12 @@ Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
  1 file changed, 3 insertions(+)
 
 diff --git a/Cargo.toml b/Cargo.toml
-index 871edd78f..e88ff275c 100644
+index 95d4ce22c..392b2f2f7 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -98,6 +98,9 @@ fontdb = { version = "0.14.1", default-features = false }
- yeslogic-fontconfig-sys = { version = "3.2.0", features = ["dlopen"] }
+@@ -101,6 +101,9 @@ fontdb = { version = "0.14.1", default-features = false }
  send_wrapper = { version = "0.6.0" }
+ cbindgen = { version = "0.24", default-features = false }
  
 +[patch.crates-io]
 +gettext-sys = { git = "https://github.com/slint-ui/gettext-rs", branch = "simon/fix-linux-detection" }
@@ -22,6 +22,3 @@ index 871edd78f..e88ff275c 100644
  [profile.release]
  lto = true
  panic = "abort"
--- 
-2.39.2
-

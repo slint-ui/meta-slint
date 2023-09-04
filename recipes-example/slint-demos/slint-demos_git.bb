@@ -1,7 +1,7 @@
 inherit cargo
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
-SRC_URI += "file://0001-WIP-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
+SRC_URI += "file://0001-WIP-v1-2-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=de1f7e3f6c26ccc1b87ed67735db968f"
 
 SUMMARY = "Various Rust-based demos of Slint packaged up in /usr/bin"
@@ -22,5 +22,5 @@ S = "${WORKDIR}/git"
 BBCLASSEXTEND = "native"
 
 do_compile() {
-    oe_cargo_build --features slint/renderer-winit-skia -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
+    oe_cargo_build --features slint/renderer-skia -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
 }
