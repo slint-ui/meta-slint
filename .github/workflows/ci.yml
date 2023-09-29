@@ -27,6 +27,7 @@ jobs:
           bitbake-layers add-layer ../../meta-slint
           echo 'PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"' >> conf/local.conf
           echo 'MACHINE = "qemuarm64"' >> conf/local.conf
+          echo 'CLANGSDK = "1"' >> conf/local.conf
       - run: |
           cd poky
           . oe-init-build-env
