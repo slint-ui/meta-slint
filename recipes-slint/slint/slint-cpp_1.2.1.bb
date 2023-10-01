@@ -1,4 +1,4 @@
-require recipes-slint/slint/slint-cpp.inc
+require recipes-slint/slint/slint-cpp-v1.inc
 
 # Either REMOVE or REPLACE this patch, but never change it, as it's also referenced
 # from other releases.

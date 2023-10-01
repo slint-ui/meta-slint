@@ -1,18 +1,19 @@
 inherit cmake
+inherit slint
 
-# Should use the C++ template, but can't because we don't package the slint compiler properly yet.
-# So build an interpreter-only C++ example from the Slint repo.
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
+SRC_URI = "git://github.com/slint-ui/slint-cpp-template.git;protocol=https;branch=main;rev=main"
 
 SUMMARY = "Work in progress recipe for Slint Hello World"
 HOMEPAGE = "https://github.com/slint-ui/slint"
 LICENSE = "GPLv3 | Slint-Commercial"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=4f9282cc0add078ee5638e65bb55c77c"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=9e911597e678943cde54111f7518e299"
 
 DEPENDS = "slint-cpp"
 
 S = "${WORKDIR}/git"
 PV = "slint-hello-world-${SRCPV}"
 
-
-OECMAKE_SOURCEPATH = "${S}/examples/printerdemo/cpp_interpreted"
+do_install() {
+    install -d ${D}${bindir}
+    install -m 755 ${B}/my_application ${D}${bindir}/slint-hello-world
+}

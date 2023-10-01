@@ -1,4 +1,4 @@
-require recipes-slint/slint/slint-cpp.inc
+require recipes-slint/slint/slint-cpp-v1.inc
 
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=29c2662b4609df90253e15270c25629d"
 SRC_URI += "file://0001-Fix-cmake-build-with-Skia-against-Yocto.patch"
