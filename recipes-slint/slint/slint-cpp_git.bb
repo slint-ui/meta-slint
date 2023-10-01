@@ -10,3 +10,8 @@ SLINT_REV = "master"
 PV = "git-${SRCPV}"
 
 EXTRA_OECMAKE:append = " -DSLINT_FEATURE_GETTEXT=ON"
+
+do_configure:prepend() {
+    # Work around current half not cross-compiling well
+    (cd ${S} && cargo update -p half --precise 2.2.1)
+}
