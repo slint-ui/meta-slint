@@ -13,6 +13,7 @@ LICENSE = "GPLv3 | Slint-Commercial"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a71019dc9c240d7add35e9d036870929"
 
 inherit cmake
+inherit pkgconfig
 inherit slint_common
 
 SLINT_REV ?= "master"
@@ -26,6 +27,7 @@ PACKAGECONFIG:append:class-target = "slint-runtime"
 
 PACKAGECONFIG[slint-compiler] = "-DSLINT_FEATURE_COMPILER=ON, -DSLINT_FEATURE_COMPILER=OFF,"
 PACKAGECONFIG[slint-runtime] = "-DSLINT_BUILD_RUNTIME=ON, -DSLINT_BUILD_RUNTIME=OFF,"
+PACKAGECONFIG[backend-linuxkms] = "-DSLINT_FEATURE_BACKEND_LINUXKMS=ON, -DSLINT_FEATURE_BACKEND_LINUXKMS=OFF,libdrm virtual/egl virtual/libgbm seatd udev libinput"
 
 S = "${WORKDIR}/git"
 
