@@ -8,8 +8,6 @@ HOMEPAGE = "https://github.com/slint-ui/slint"
 LICENSE = "GPLv3 | Slint-Commercial"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=9e911597e678943cde54111f7518e299"
 
-DEPENDS = "slint-cpp"
-
 S = "${WORKDIR}/git"
 PV = "slint-hello-world-${SRCPV}"
 
