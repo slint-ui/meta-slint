@@ -18,7 +18,7 @@ inherit slint_common
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
-DEPENDS:append:class-target = " fontconfig virtual/libgl"
+DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgl"
 DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH}"
 
 SLINT_REV ?= "master"
