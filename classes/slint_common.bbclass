@@ -1,9 +1,4 @@
 
-REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
-
-DEPENDS:append:class-target = " fontconfig libxcb wayland virtual/libgl"
-DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH}"
-
 do_compile:prepend() {
     export RUST_FONTCONFIG_DLOPEN=on
     oe_cargo_fix_env

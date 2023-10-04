@@ -12,6 +12,11 @@ LICENSE = "GPLv3 | Slint-Commercial"
 
 inherit slint_common
 
+REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
+
+DEPENDS:append:class-target = " fontconfig libxcb wayland virtual/libgl"
+DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH}"
+
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
 
 do_configure[network] = "1"

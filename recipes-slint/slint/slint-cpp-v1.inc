@@ -15,6 +15,11 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a71019dc9c240d7add35e9d036870929"
 inherit cmake
 inherit slint_common
 
+REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
+
+DEPENDS:append:class-target = " fontconfig libxcb wayland virtual/libgl"
+DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH}"
+
 SLINT_REV ?= "master"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=${SLINT_REV}"
 
