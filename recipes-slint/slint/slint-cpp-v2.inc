@@ -62,14 +62,12 @@ do_install() {
     # Cargo will rebuild if some environment variables changed. To avoid going through the steps of checking
     # all variables and re-instating them here, let's go straight for the install step:
     DESTDIR="${D}" cmake -P ${B}/cmake_install.cmake
-
-    if [ -n "${@bb.utils.filter('PACKAGECONFIG', 'slint-runtime', d)}" ]; then
-        # Slint is not installing proper versioned .so files/symlinks yet, do it by hand:
-        mv ${D}/usr/lib/libslint_cpp.so ${D}/usr/lib/libslint_cpp.so.1.0.0
-        ln -s libslint_cpp.so.1.0.0 ${D}/usr/lib/libslint_cpp.so.1.0
-        ln -s libslint_cpp.so.1.0.0 ${D}/usr/lib/libslint_cpp.so
-    fi
 }
+
+# Sadly, we don't install proper shared object files with DT_SONAME, etc. yet. For the time being,
+# accept that we just install libslint_cpp.so and that's it.
+FILES_SOLIBSDEV = ""
+FILES:${PN} += "/usr/lib/libslint_cpp.so"
 
 # Usually OE_CMAKE_C_COMPILER is just say `arm-poky-linux-gcc`, but we need the original `${CC}` that includes
 # options like -mfloat-abi. This is taken into use when compiling Rust Skia's bindings.cpp (the manual part),
