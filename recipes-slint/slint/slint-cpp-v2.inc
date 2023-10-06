@@ -29,6 +29,7 @@ DEPENDS:append:class-target = " ${PN}-native"
 EXTRA_OECMAKE:append:class-target = " -DSLINT_COMPILER=/\$ENV{OECORE_NATIVE_SYSROOT}/usr/bin/slint-compiler"
 
 PACKAGECONFIG:append:class-native = "slint-compiler"
+PACKAGECONFIG:class-nativesdk = "slint-compiler"
 PACKAGECONFIG:append:class-target = " \
     slint-runtime renderer-skia interpreter \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'backend-winit-wayland', '', d)} \
@@ -88,4 +89,7 @@ EXTRA_OECMAKE:append = " -DBUILD_TESTING=OFF -DSLINT_BUILD_EXAMPLES=OFF -DCMAKE_
 EXTRA_OECMAKE:append = " -DCMAKE_DISABLE_FIND_PACKAGE_Qt5=true -DSLINT_FEATURE_BACKEND_QT=OFF"
 EXTRA_OECMAKE:append = " -DSLINT_FEATURE_BACKEND_WINIT=OFF"
 
-BBCLASSEXTEND = "native"
+# The slint compiler for the SDK doesn't need (shared) libstd-rs
+RUSTLIB_DEP:class-nativesdk = ""
+
+BBCLASSEXTEND = "native nativesdk"
