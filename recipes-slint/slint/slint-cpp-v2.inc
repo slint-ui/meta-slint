@@ -26,7 +26,7 @@ SLINT_REV ?= "master"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=${SLINT_REV}"
 
 DEPENDS:append:class-target = " ${PN}-native"
-EXTRA_OECMAKE:append:class-target = " -DSLINT_COMPILER=\$ENV{OECORE_NATIVE_SYSROOT}/usr/bin/slint-compiler"
+EXTRA_OECMAKE:append:class-target = " -DSLINT_COMPILER=/\$ENV{OECORE_NATIVE_SYSROOT}/usr/bin/slint-compiler"
 
 PACKAGECONFIG:append:class-native = "slint-compiler"
 PACKAGECONFIG:append:class-target = " \
