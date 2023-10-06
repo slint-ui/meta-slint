@@ -1,4 +1,5 @@
 inherit cargo
+inherit rust
 
 SUMMARY = "Slint C++ UI Toolkit"
 DESCRIPTION = "Slint is a toolkit to efficiently develop fluid graphical \
@@ -75,8 +76,12 @@ FILES:${PN} += "/usr/lib/libslint_cpp.so"
 OECMAKE_C_COMPILER = "${RUST_TARGET_CC}"
 OECMAKE_CXX_COMPILER = "${RUST_TARGET_CXX}"
 
-RUST_CARGO_TARGET = "${@d.getVar('RUST_HOST_SYS') or d.getVar('HOST_SYS')}"
-EXTRA_OECMAKE:append = " -DRust_CARGO_TARGET=${RUST_CARGO_TARGET}"
+def extract_rust_target(d):
+    import re
+    commandline = d.getVar('RUSTC_ARCHFLAGS')
+    return re.search('--target=(?P<rusttriplet>[^\s]+)', commandline).group('rusttriplet')
+
+EXTRA_OECMAKE:append = " -DRust_CARGO_TARGET=${@extract_rust_target(d)}"
 
 EXTRA_OECMAKE:append = " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF"
 EXTRA_OECMAKE:append = " -DBUILD_TESTING=OFF -DSLINT_BUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo"
