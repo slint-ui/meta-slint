@@ -11,10 +11,8 @@ For a C++ based application, use this layer, and in your application's recipe in
 Meta-slint requires:  
   
 ```
-meta-openembedded/meta-oe  
-meta-rust  
-meta-clang  
-meta-slint  
+meta-openembedded/meta-oe
+meta-slint
 ```
 Check the [layer.conf](conf/layer.conf) LAYERSERIES_COMPAT_meta for yocto version compatibility   
   
