@@ -84,3 +84,12 @@ Either add the package to your corresponding package groups or add the following
 ```
 TOOLCHAIN_HOST_TASK:append = " nativesdk-slint-cpp"
 ```
+
+## Building an SDK for external Slint builds
+
+A regular Yocto SDK should be suitable for building Slint against, out of the box. Make sure to source
+your `environment-setup` before invoking `cmake` on the Slint build, and pass `-DRust_CARGO_TARGET=<your triplet>`.
+
+If your build of Slint enables the Skia renderer (`SLINT_FEATURE_RENDERER_SKIA`), make sure to include the
+[meta-clang](https://github.com/kraj/meta-clang) layer in your project and set `CLANGSDK = "1"` in your `conf/local.conf`
+before running the `populate_sdk` task on your image.
