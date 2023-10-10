@@ -66,3 +66,8 @@ that are supposed to override them, as they are there located in `classes`.
 A workaround is to cherry-pick commits [39e05f9b0fdc3f76f8b80a12989f78614bc9ea5c](https://github.com/openembedded/openembedded-core/commit/39e05f9b0fdc3f76f8b80a12989f78614bc9ea5c)
 and [d1af583c290eb0cff5e36363f7531832a863a1a8](https://github.com/openembedded/openembedded-core/commit/d1af583c290eb0cff5e36363f7531832a863a1a8)
 into your local openembedded-core layer.
+
+## Compiling the Skia Renderer
+
+The Skia renderer requires clang to compile. The [meta-clang](https://github.com/kraj/meta-clang) layer
+provides current versions of clang that work with the recipes in this layer.
