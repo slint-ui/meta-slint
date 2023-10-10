@@ -4,22 +4,24 @@ This layer contains recipes/classes/etc. for building Slint's C++ API, as well a
 demos.
 
 For a Rust based application using Slint, use [meta-rust](https://github.com/meta-rust/meta-rust) directly,
-For a C++ based application, use this layer, and in your application's recipe inherit from `cmake` and `slint`.
+
+For a C++ based application, the recipes in this layer assume that your application is built using CMake and
+uses `find_package(Slint)` to locate Slint, and then uses `slint_target_sources` to compile `.slint` files to C++
+as well as links against `Slint::Slint`. For more details, check out our [C++ Getting Started](https://slint.dev/releases/1.2.2/docs/cpp/getting_started).
+When creating a Bitbake recipe for, use this layer, and in your application's recipe inherit from `cmake` and `slint`.
 
 ## Prerequisites
 
-Meta-slint requires:  
-  
+Meta-slint requires:
+
 ```
 meta-openembedded/meta-oe
 meta-slint
 ```
-Check the [layer.conf](conf/layer.conf) LAYERSERIES_COMPAT_meta for yocto version compatibility   
-  
-For local version locking just copy the slint-cpp_x.x.x.bb and modify the SLINT_REV 
-and set PREFERRED_VERSION_slint-cpp = "x.x.x"
+Check the [layer.conf](conf/layer.conf) LAYERSERIES_COMPAT_meta for yocto version compatibility
 
-In your application's recipe
+For local version locking just copy the slint-cpp_x.x.x.bb and modify the SLINT_REV
+and set `PREFERRED_VERSION_slint-cpp = "x.x.x"` in your `conf/local.conf`.
 
 ## Features
 
@@ -28,18 +30,18 @@ configurable via `PACKAGECONFIG`.
 
 | Feature Name       | Description                         | Enabled by Default |
 |--------------------|-------------------------------------|--------------------|
-| `renderer-skia`    | Skia OpenGL renderer                | Yes                |
-| `renderer-femtovg` | Lightweight FemtoVG OpenGL renderer | No                 |
+| `renderer-skia`    | Skia OpenGL renderer                | No                 |
+| `renderer-femtovg` | Lightweight FemtoVG OpenGL renderer | Yes                |
 | `backend-linuxkms` | Backend for rendering via KMS/DRM   | No                 |
 | `interpreter`      | C++ API for Slint Interpreter       | Yes                |
 
 Set the `PACKAGECONFIG:pn-slint-cpp` variable in your `conf/local.conf` to tweak.
-For example, to disable the Skia renderer, enable FemtoVG, and the linuxkms
+For example, to disable the FemtoVG renderer, enable Skia, and the linuxkms
 backend, set them like this:
 
 ```
-PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-femtovg "
-PACKAGECONFIG:remove:pn-slint-cpp = " renderer-skia "
+PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia "
+PACKAGECONFIG:remove:pn-slint-cpp = " renderer-femtovg "
 ```
 
 ## Yocto Release Specific Notes
@@ -71,3 +73,14 @@ into your local openembedded-core layer.
 
 The Skia renderer requires clang to compile. The [meta-clang](https://github.com/kraj/meta-clang) layer
 provides current versions of clang that work with the recipes in this layer.
+
+## Building an SDK that contains Slint
+
+With Slint version 1.3 or newer, the `nativesdk-slint-cpp` package allows for including Slint in your SDK,
+so that CMake based applications that use Slint and the Slint C++ compiler can be used.
+
+Either add the package to your corresponding package groups or add the following to your `conf/local.conf`:
+
+```
+TOOLCHAIN_HOST_TASK:append = " nativesdk-slint-cpp"
+```
