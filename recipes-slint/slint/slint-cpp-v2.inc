@@ -20,7 +20,6 @@ inherit slint_common
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgl"
-DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH}"
 
 SLINT_REV ?= "master"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=${SLINT_REV}"
@@ -31,7 +30,7 @@ EXTRA_OECMAKE:append:class-target = " -DSLINT_COMPILER=/\$ENV{OECORE_NATIVE_SYSR
 PACKAGECONFIG:append:class-native = "slint-compiler"
 PACKAGECONFIG:class-nativesdk = "slint-compiler"
 PACKAGECONFIG:append:class-target = " \
-    slint-runtime renderer-skia interpreter \
+    slint-runtime renderer-femtovg interpreter \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'backend-winit-wayland', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'backend-winit-x11', '', d)} \
 "
@@ -39,7 +38,7 @@ PACKAGECONFIG:append:class-target = " \
 PACKAGECONFIG[slint-compiler] = "-DSLINT_FEATURE_COMPILER=ON, -DSLINT_FEATURE_COMPILER=OFF,"
 PACKAGECONFIG[slint-runtime] = "-DSLINT_BUILD_RUNTIME=ON, -DSLINT_BUILD_RUNTIME=OFF,"
 PACKAGECONFIG[backend-linuxkms] = "-DSLINT_FEATURE_BACKEND_LINUXKMS=ON, -DSLINT_FEATURE_BACKEND_LINUXKMS=OFF,libdrm virtual/egl virtual/libgbm seatd udev libinput"
-PACKAGECONFIG[renderer-skia] = "-DSLINT_FEATURE_RENDERER_SKIA=ON, -DSLINT_FEATURE_RENDERER_SKIA=OFF,"
+PACKAGECONFIG[renderer-skia] = "-DSLINT_FEATURE_RENDERER_SKIA=ON, -DSLINT_FEATURE_RENDERER_SKIA=OFF,clang-cross-${TARGET_ARCH}"
 PACKAGECONFIG[renderer-femtovg] = "-DSLINT_FEATURE_RENDERER_FEMTOVG=ON, -DSLINT_FEATURE_RENDERER_FEMTOVG=OFF,"
 PACKAGECONFIG[interpreter] = "-DSLINT_FEATURE_INTERPRETER=ON, -DSLINT_FEATURE_INTERPRETER=OFF,"
 PACKAGECONFIG[backend-winit-wayland] = "-DSLINT_FEATURE_BACKEND_WINIT_WAYLAND=ON, -DSLINT_FEATURE_BACKEND_WINIT_WAYLAND=OFF,wayland"
