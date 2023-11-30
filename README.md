@@ -21,7 +21,7 @@ meta-slint
 Check the [layer.conf](conf/layer.conf) LAYERSERIES_COMPAT_meta for yocto version compatibility
 
 For local version locking just copy the slint-cpp_x.x.x.bb and modify the SLINT_REV
-and set `PREFERRED_VERSION_slint-cpp = "x.x.x"` in your `conf/local.conf`.
+and set `PREFERRED_VERSION_slint-cpp = "x.x.x"` and `PREFERRED_VERSION_slint-cpp-native = "x.x.x" in your `conf/local.conf`.
 
 ## Features
 
