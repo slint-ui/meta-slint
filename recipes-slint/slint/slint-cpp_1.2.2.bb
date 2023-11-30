@@ -1,6 +1,6 @@
 require recipes-slint/slint/slint-cpp-v1.inc
 
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1.2;rev=${SLINT_REV}"
 
 # Either REMOVE or REPLACE this patch, but never change it, as it's also referenced
 # from other releases.
