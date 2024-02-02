@@ -2,7 +2,7 @@ inherit cargo
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
 SRC_URI += "file://0001-WIP-v1-2-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=c12ffea0eacb376c3ba8c0601fe78d5d"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=0cfef883ea34026eab43837344667cfe"
 
 SUMMARY = "Various Rust-based demos of Slint packaged up in /usr/bin"
 DESCRIPTION = "This recipe builds various Slint demos such as the energy monitor \
@@ -14,8 +14,12 @@ inherit slint_common
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
-DEPENDS:append:class-target = " fontconfig libxcb wayland virtual/libgl"
+DEPENDS:append:class-target = " fontconfig virtual/libgl"
 DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH}"
+DEPENDS:append:class-target = " \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'libxcb', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland', '', d)} \
+"
 
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
 
