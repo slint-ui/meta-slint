@@ -7,7 +7,7 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=c12ffea0eacb376c3ba8c0601fe78d5d"
 SUMMARY = "Various Rust-based demos of Slint packaged up in /usr/bin"
 DESCRIPTION = "This recipe builds various Slint demos such as the energy monitor \
 or the printer demo and installs the binaries into /usr/bin."
-HOMEPAGE = "https://slint-ui.com/"
+HOMEPAGE = "https://slint.dev/"
 LICENSE = "GPLv3 | Slint-Commercial"
 
 inherit slint_common
