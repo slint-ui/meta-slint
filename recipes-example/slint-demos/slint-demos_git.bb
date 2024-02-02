@@ -16,6 +16,7 @@ REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append:class-target = " fontconfig virtual/libgl"
 DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH}"
+DEPENDS:append:class-target = " libdrm virtual/egl virtual/libgbm seatd udev libinput"
 DEPENDS:append:class-target = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'libxcb', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland', '', d)} \
@@ -31,5 +32,5 @@ S = "${WORKDIR}/git"
 BBCLASSEXTEND = "native"
 
 do_compile() {
-    oe_cargo_build --features slint/renderer-skia -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
+    oe_cargo_build --features slint/renderer-skia,slint/backend-linuxkms -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
 }
