@@ -24,7 +24,7 @@ DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgl"
 SLINT_REV ?= "master"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=${SLINT_REV}"
 
-DEPENDS:append:class-target = " ${PN}-native"
+DEPENDS:append:class-target = " ${PN}-native ca-certificates-native"
 EXTRA_OECMAKE:append:class-target = " -DSLINT_COMPILER=/\$ENV{OECORE_NATIVE_SYSROOT}/usr/bin/slint-compiler"
 
 PACKAGECONFIG:append:class-native = "slint-compiler"
@@ -57,6 +57,11 @@ do_configure() {
     echo "set(CMAKE_SYSROOT \"${RECIPE_SYSROOT}\")" >> ${WORKDIR}/toolchain.cmake
     cargo_common_do_configure
     cmake_do_configure
+}
+
+do_compile:prepend:class-target() {
+    CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
+    export CURL_CA_BUNDLE
 }
 
 do_install() {
