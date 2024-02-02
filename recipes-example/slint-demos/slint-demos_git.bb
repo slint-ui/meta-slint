@@ -1,4 +1,5 @@
 inherit cargo
+inherit pkgconfig
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
 SRC_URI += "file://0001-WIP-v1-2-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
