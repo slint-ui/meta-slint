@@ -37,5 +37,5 @@ do_compile() {
     export CURL_CA_BUNDLE
     # Work around current half not cross-compiling well
     (cd ${S} && cargo update -p half --precise 2.2.1)
-    oe_cargo_build --features slint/renderer-skia,slint/backend-linuxkms -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
+    oe_cargo_build --features slint/backend-linuxkms -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
 }
