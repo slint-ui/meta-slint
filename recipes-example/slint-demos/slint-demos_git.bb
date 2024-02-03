@@ -32,10 +32,13 @@ S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native"
 
+do_configure:append() {
+    # Work around current half not cross-compiling well
+    (cd ${S} && cargo update -p half --precise 2.2.1)
+}
+
 do_compile() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
-    # Work around current half not cross-compiling well
-    (cd ${S} && cargo update -p half --precise 2.2.1)
-    oe_cargo_build --features slint/backend-linuxkms -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
+    oe_cargo_build --features slint/backend-linuxkms,slint/renderer-skia -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
 }
