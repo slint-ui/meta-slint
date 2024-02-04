@@ -1,4 +1,5 @@
 inherit cargo
+inherit rust
 inherit pkgconfig
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
@@ -15,7 +16,7 @@ inherit slint_common
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
-DEPENDS:append:class-target = " fontconfig virtual/libgl"
+DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgl"
 DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH} ca-certificates-native"
 DEPENDS:append:class-target = " libdrm virtual/egl virtual/libgbm seatd udev libinput"
 DEPENDS:append:class-target = " \
@@ -40,5 +41,5 @@ do_configure:append() {
 do_compile() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
-    oe_cargo_build --features slint/backend-linuxkms,slint/renderer-skia -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
+    oe_cargo_build --features slint/backend-linuxkms,slint/renderer-skia -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
 }
