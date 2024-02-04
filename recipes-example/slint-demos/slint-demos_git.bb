@@ -41,5 +41,7 @@ do_configure:append() {
 do_compile() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
-    oe_cargo_build --features slint/backend-linuxkms,slint/renderer-skia -p energy-monitor -p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay
+    for bin in slide_puzzle printerdemo gallery opengl_texture opengl_underlay; do
+        oe_cargo_build --features slint/backend-linuxkms,slint/renderer-skia -p $bin
+    done
 }
