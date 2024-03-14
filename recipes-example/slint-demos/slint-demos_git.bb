@@ -14,6 +14,8 @@ LICENSE = "GPLv3 | Slint-Commercial"
 
 inherit slint_common
 
+PV = "git-${SRCPV}"
+
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgl"
