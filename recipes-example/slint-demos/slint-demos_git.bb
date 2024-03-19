@@ -35,6 +35,10 @@ S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native"
 
+# Override build flags to avoid --offline introduced in Mickledore
+CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=${MANIFEST_PATH}"
+
+
 do_configure:append() {
     # Work around current half not cross-compiling well
     (cd ${S} && cargo update -p half --precise 2.2.1)
