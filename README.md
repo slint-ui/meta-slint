@@ -93,3 +93,12 @@ your `environment-setup` before invoking `cmake` on the Slint build, and pass `-
 If your build of Slint enables the Skia renderer (`SLINT_FEATURE_RENDERER_SKIA`), make sure to include the
 [meta-clang](https://github.com/kraj/meta-clang) layer in your project and set `CLANGSDK = "1"` in your `conf/local.conf`
 before running the `populate_sdk` task on your image.
+
+## Demo Images
+
+When building for [STM32 MPU OpenSTLinux](https://www.st.com/en/embedded-software/stm32-mpu-openstlinux-distribution.html),
+adding this `meta-slint` layer to your environment enables an additional `st-example-image-slint` image target. In your
+`conf/local.conf` set `DISTRO = "openstlinux-eglfs"` and run `bitbake st-example-image-slint` to build an image that ships
+various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
+
+(Tested on stm32mp157-disco)
