@@ -35,8 +35,13 @@ S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native"
 
+def extract_rust_target(d):
+    import re
+    commandline = d.getVar('RUSTC_ARCHFLAGS')
+    return re.search('--target=(?P<rusttriplet>[^\s]+)', commandline).group('rusttriplet')
+
 # Override build flags to avoid --offline introduced in Mickledore
-CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=${MANIFEST_PATH}"
+CARGO_BUILD_FLAGS = "-v --target ${@extract_rust_target(d)} ${BUILD_MODE} --manifest-path=${MANIFEST_PATH}"
 
 
 do_configure:append() {
