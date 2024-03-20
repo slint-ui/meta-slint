@@ -1,4 +1,4 @@
-From d2fc63661cb510a8a1952702447361abf7aaf9dd Mon Sep 17 00:00:00 2001
+From 8f274dcc19bbb37bb659fc243d60c0fb8b316921 Mon Sep 17 00:00:00 2001
 From: Simon Hausmann <simon.hausmann@slint-ui.com>
 Date: Sun, 18 Jun 2023 11:35:07 +0200
 Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
@@ -9,11 +9,11 @@ Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
  1 file changed, 3 insertions(+)
 
 diff --git a/Cargo.toml b/Cargo.toml
-index 383b17c3a..3c7b14fc0 100644
+index 3b1da5e70..6906ea219 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -139,6 +139,9 @@ strum = { version = "0.26.1", default-features = false, features = ["derive"] }
- toml_edit = { version = "0.21" }
+@@ -140,6 +140,9 @@ strum = { version = "0.26.1", default-features = false, features = ["derive"] }
+ toml_edit = { version = "0.22.7" }
  cfg_aliases = { version = "0.2.0" }
  
 +[patch.crates-io]
