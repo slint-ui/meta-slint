@@ -1,0 +1,8 @@
+[Unit]
+Description=Startup script to launch Slint demo(s) on startup
+
+[Service]
+ExecStart=/usr/bin/energy-monitor
+
+[Install]
+WantedBy=multi-user.target
