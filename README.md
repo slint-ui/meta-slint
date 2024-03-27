@@ -105,7 +105,7 @@ various Slint demos in a minimal image. The demos run directly on the framebuffe
 
 (Tested on stm32mp157-disco)
 
-## F&S Elektronik System
+## F&S Elektronik Systeme
 
 When building for F&S Elektronik [meta-fus](https://github.com/FSEmbedded/meta-fus), adding this `meta-slint` layer to your
 environment enables an additional `fus-image-slint-demos` image target.
