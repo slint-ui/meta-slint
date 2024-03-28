@@ -65,8 +65,15 @@ Mickledore at the moment because bitbake's `classes` directory was split up into
 are in `classes-recipe` and are thus always found before the rust recipes in `meta-rust`
 that are supposed to override them, as they are there located in `classes`.
 
-A workaround is to cherry-pick commits [39e05f9b0fdc3f76f8b80a12989f78614bc9ea5c](https://github.com/openembedded/openembedded-core/commit/39e05f9b0fdc3f76f8b80a12989f78614bc9ea5c)
-and [d1af583c290eb0cff5e36363f7531832a863a1a8](https://github.com/openembedded/openembedded-core/commit/d1af583c290eb0cff5e36363f7531832a863a1a8)
+A workaround is to cherry-pick a series of commits from upstream oe/master:
+   * [39e05f9b0fdc3f76f8b80a12989f78614bc9ea5c](https://github.com/openembedded/openembedded-core/commit/39e05f9b0fdc3f76f8b80a12989f78614bc9ea5c)
+   * [d1af583c290eb0cff5e36363f7531832a863a1a8](https://github.com/openembedded/openembedded-core/commit/d1af583c290eb0cff5e36363f7531832a863a1a8)
+   * [c3eba94ee44adcd3a0aa61f6b087c15c02e4697f](https://github.com/openembedded/openembedded-core/commit/c3eba94ee44adcd3a0aa61f6b087c15c02e4697f)
+   * [ad4369d7901c1239e5f07473b1f2517edc4a23ea](https://github.com/openembedded/openembedded-core/commit/ad4369d7901c1239e5f07473b1f2517edc4a23ea)
+   * [30637cdeb31fae02544fdc643a455d0ebb126ee6](https://github.com/openembedded/openembedded-core/commit/30637cdeb31fae02544fdc643a455d0ebb126ee6)
+   * [d1386bbf2211c7616527e62f2f7b069a935b0d68](https://github.com/openembedded/openembedded-core/commit/d1386bbf2211c7616527e62f2f7b069a935b0d68)
+   * [728c40b939c6af6358a483237298ca834cbb8993](https://github.com/openembedded/openembedded-core/commit/728c40b939c6af6358a483237298ca834cbb8993)
+
 into your local openembedded-core layer.
 
 ## Compiling the Skia Renderer
