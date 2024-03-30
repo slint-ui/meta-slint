@@ -2,9 +2,8 @@ TARGET_CFLAGS:remove = "-fcanon-prefix-map"
 
 do_compile:prepend() {
     export RUST_FONTCONFIG_DLOPEN=on
-    oe_cargo_fix_env
-    export RUSTFLAGS="${RUSTFLAGS}"
-    export RUST_TARGET_PATH="${RUST_TARGET_PATH}"
+    #export RUSTFLAGS="${RUSTFLAGS}"
+    #export RUST_TARGET_PATH="${RUST_TARGET_PATH}"
     # Make sure that Skia's invocation of clang to generate bindings.rs for the Skia headers
     # passes the right flags, in particular float abi selection
     export BINDGEN_EXTRA_CLANG_ARGS="${HOST_CC_ARCH} ${TOOLCHAIN_OPTIONS} ${TARGET_CFLAGS}"
