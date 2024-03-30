@@ -1,5 +1,4 @@
-inherit cargo
-inherit rust
+inherit cargo_bin
 inherit pkgconfig
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=644e15dee19fb1a72975c81e62892b9251a1111a"
@@ -35,24 +34,19 @@ S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native"
 
-def extract_rust_target(d):
-    import re
-    commandline = d.getVar('RUSTC_ARCHFLAGS')
-    return re.search('--target=(?P<rusttriplet>[^\s]+)', commandline).group('rusttriplet')
-
-# Override build flags to avoid --offline introduced in Mickledore
-CARGO_BUILD_FLAGS = "-v --target ${@extract_rust_target(d)} ${BUILD_MODE} --manifest-path=${@d.getVar('CARGO_MANIFEST_PATH') or d.getVar('MANIFEST_PATH')}"
-
-
 do_configure:append() {
     # Work around current half not cross-compiling well
     (cd ${S} && cargo update -p half --precise 2.2.1)
 }
 
-do_compile() {
+EXTRA_CARGO_FLAGS = "-p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay -p energy-monitor"
+CARGO_FEATURES = "slint/backend-linuxkms slint/renderer-skia"
+
+do_compile:prepend() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
-    for bin in slide_puzzle printerdemo gallery opengl_texture opengl_underlay energy-monitor; do
-        oe_cargo_build --features slint/backend-linuxkms,slint/renderer-skia -p $bin
-    done
+}
+do_compile:append() {
+    rm -f "${CARGO_BINDIR}"/*.so
+    rm -f "${CARGO_BINDIR}"/*.rlib
 }
