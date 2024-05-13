@@ -2,7 +2,7 @@ inherit cargo
 inherit rust
 inherit pkgconfig
 
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=644e15dee19fb1a72975c81e62892b9251a1111a"
 SRC_URI += "file://0001-WIP-v1-2-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=fce682d891cef27e78643d58a1c80149"
 
@@ -14,7 +14,7 @@ LICENSE = "GPLv3 | Slint-Commercial"
 
 inherit slint_common
 
-PV = "git-${SRCPV}"
+PV = "1.6.0+git"
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
@@ -41,7 +41,7 @@ def extract_rust_target(d):
     return re.search('--target=(?P<rusttriplet>[^\s]+)', commandline).group('rusttriplet')
 
 # Override build flags to avoid --offline introduced in Mickledore
-CARGO_BUILD_FLAGS = "-v --target ${@extract_rust_target(d)} ${BUILD_MODE} --manifest-path=${MANIFEST_PATH}"
+CARGO_BUILD_FLAGS = "-v --target ${@extract_rust_target(d)} ${BUILD_MODE} --manifest-path=${@d.getVar('CARGO_MANIFEST_PATH') or d.getVar('MANIFEST_PATH')}"
 
 
 do_configure:append() {
