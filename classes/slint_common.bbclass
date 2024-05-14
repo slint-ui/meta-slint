@@ -1,3 +1,4 @@
+TARGET_CFLAGS:remove = "-fcanon-prefix-map"
 
 do_compile:prepend() {
     export RUST_FONTCONFIG_DLOPEN=on
@@ -20,6 +21,7 @@ TARGET_CLANGCC_ARCH:remove = "-mel"
 TARGET_CLANGCC_ARCH:append = "${@bb.utils.contains("TUNE_FEATURES", "bigendian", " -mbig-endian", " -mlittle-endian", d)}"
 TARGET_CLANGCC_ARCH:remove:powerpc = "-mhard-float"
 TARGET_CLANGCC_ARCH:remove:powerpc = "-mno-spe"
+TARGET_CLANGCC_ARCH:remove = "-fcanon-prefix-map"
 
 # Add -I=/usr/include/freetype2 as skia has hardcoded it to -I/usr/include/freetype2, which
 # would locate freetype in the host system, not the sysroot target.
