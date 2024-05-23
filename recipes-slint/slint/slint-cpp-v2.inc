@@ -1,5 +1,4 @@
-inherit cargo
-inherit rust
+inherit cargo_bin
 
 SUMMARY = "Slint C++ UI Toolkit"
 DESCRIPTION = "Slint is a toolkit to efficiently develop fluid graphical \
@@ -57,8 +56,39 @@ do_compile[network] = "1"
 
 do_configure() {
     echo "set(CMAKE_SYSROOT \"${RECIPE_SYSROOT}\")" >> ${WORKDIR}/toolchain.cmake
-    cargo_common_do_configure
+    cargo_bin_do_configure
     cmake_do_configure
+}
+
+do_compile:prepend() {
+    # Wrappers created by cargo_bin_do_configure
+    export TARGET_CC="${WRAPPER_DIR}/cc-wrapper.sh"
+    export TARGET_CXX="${WRAPPER_DIR}/cxx-wrapper.sh"
+    export CC="${WRAPPER_DIR}/cc-native-wrapper.sh"
+    export CXX="${WRAPPER_DIR}/cxx-native-wrapper.sh"
+    export TARGET_LD="${WRAPPER_DIR}/linker-wrapper.sh"
+    export LD="${WRAPPER_DIR}/linker-native-wrapper.sh"
+    export PKG_CONFIG_ALLOW_CROSS="1"
+    export LDFLAGS=""
+    export RUSTFLAGS="${RUSTFLAGS}"
+    export SSH_AUTH_SOCK="${SSH_AUTH_SOCK}"
+
+    # This "DO_NOT_USE_THIS" option of cargo is currently the only way to
+    # configure a different linker for host and target builds when RUST_BUILD ==
+    # RUST_TARGET.
+    export __CARGO_TEST_CHANNEL_OVERRIDE_DO_NOT_USE_THIS="nightly"
+    export CARGO_UNSTABLE_TARGET_APPLIES_TO_HOST="true"
+    export CARGO_UNSTABLE_HOST_CONFIG="true"
+    export CARGO_TARGET_APPLIES_TO_HOST="false"
+    export CARGO_TARGET_${@rust_target(d, 'TARGET').replace('-','_').upper()}_LINKER="${WRAPPER_DIR}/linker-wrapper.sh"
+    export CARGO_HOST_LINKER="${WRAPPER_DIR}/linker-native-wrapper.sh"
+    export CARGO_BUILD_FLAGS="-C rpath"
+    export CARGO_PROFILE_RELEASE_DEBUG="true"
+
+    # The CC crate defaults to using CFLAGS when compiling everything. We can
+    # give it custom flags for compiling on the host.
+    export HOST_CXXFLAGS=""
+    export HOST_CFLAGS=""
 }
 
 do_compile:prepend:class-target() {
@@ -80,15 +110,10 @@ FILES:${PN} += "/usr/lib/libslint_cpp.so"
 # Usually OE_CMAKE_C_COMPILER is just say `arm-poky-linux-gcc`, but we need the original `${CC}` that includes
 # options like -mfloat-abi. This is taken into use when compiling Rust Skia's bindings.cpp (the manual part),
 # where OECMAKE_CXX_COMPILER becomes CMAKE_CXX_COMPILER, and Corrison turns it into CXX_<triplet>.
-OECMAKE_C_COMPILER = "${RUST_TARGET_CC}"
-OECMAKE_CXX_COMPILER = "${RUST_TARGET_CXX}"
+#OECMAKE_C_COMPILER = "${RUST_TARGET_CC}"
+#OECMAKE_CXX_COMPILER = "${RUST_TARGET_CXX}"
 
-def extract_rust_target(d):
-    import re
-    commandline = d.getVar('RUSTC_ARCHFLAGS')
-    return re.search('--target=(?P<rusttriplet>[^\s]+)', commandline).group('rusttriplet')
-
-EXTRA_OECMAKE:append = " -DRust_CARGO_TARGET=${@extract_rust_target(d)}"
+EXTRA_OECMAKE:append = " -DRust_CARGO_TARGET=${RUST_TARGET}"
 
 EXTRA_OECMAKE:append = " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF"
 EXTRA_OECMAKE:append = " -DBUILD_TESTING=OFF -DSLINT_BUILD_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo"
