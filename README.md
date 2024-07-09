@@ -1,6 +1,6 @@
 ## Introduction
 
-This layer contains recipes/classes/etc. for building Slint's C++ API, as well as the Rust based
+This layer contains recipes and classes for building Slint's C++ API, as well as the Rust based
 demos.
 
 For a Rust based application using Slint, use [meta-rust](https://github.com/meta-rust/meta-rust) directly,
