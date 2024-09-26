@@ -4,9 +4,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  prepare_env:
     runs-on: ubuntu-latest
+    name: Create new Hetzner Cloud instance for build
+    steps:
+      - uses: stonemaster/hetzner-github-runner@HEAD
+        with:
+          github-api-key: ${{ secrets.GH_API_KEY }}
+          hetzner-api-key: ${{ secrets.HETZNER_API_KEY }}
+          hetzner-instance-type: cx11
 
+  build:
+    runs-on: self-hosted
+    needs: prepare_env
+  
     steps:
       - uses: actions/checkout@v3
         with:
