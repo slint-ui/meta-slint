@@ -24,7 +24,7 @@ jobs:
             path: 'meta-slint'
       - run: |
           sudo apt-get update
-          sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd
+          sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3 python3-distutils
           sudo locale-gen en_US.UTF-8
           sudo update-locale
       - run: |
