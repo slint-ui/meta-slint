@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Create new Hetzner Cloud instance for build
     steps:
-      - uses: stonemaster/hetzner-github-runner@HEAD
+      - uses: stonemaster/hetzner-github-runner@v2
         with:
           github-api-key: ${{ secrets.GH_API_KEY }}
           hetzner-api-key: ${{ secrets.HETZNER_API_KEY }}
