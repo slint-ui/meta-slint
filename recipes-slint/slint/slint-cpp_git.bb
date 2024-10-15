@@ -4,7 +4,7 @@ require recipes-slint/slint/slint-cpp-v2.inc
 # from 1.1.0 release
 SRC_URI += "file://0001-WIP-git-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
 
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eebec9101f22e9d1977ba3352a1c24c0"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=47db5060638acc88cba176445dbd98b6"
 SLINT_REV = "master"
 
 PV = "git-${SRCPV}"
