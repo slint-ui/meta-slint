@@ -16,7 +16,7 @@ Meta-slint requires:
 
 ```
 meta-openembedded/meta-oe
-meta-slint
+meta-rust-bin
 ```
 Check the [layer.conf](conf/layer.conf) LAYERSERIES_COMPAT_meta for yocto version compatibility
 
@@ -44,38 +44,6 @@ backend, set them like this:
 PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia "
 PACKAGECONFIG:remove:pn-slint-cpp = " renderer-femtovg "
 ```
-
-## Yocto Release Specific Notes
-
-### Kirkstone
-
-For compiling against Kirkstone, you need to upgrade Rust to match the minimum
-required Rust version required by the Slint release you're compiling.
-
-This means that you may have to either backport the rust recipes or add [meta-rust](https://github.com/meta-rust/meta-rust)
-to your project.
-
-### Mickledore
-
-For compiling against Kirkstone, you need to upgrade Rust to match the minimum
-required Rust version required by the Slint release you're compiling.
-
-Unfortunately [meta-rust](https://github.com/meta-rust/meta-rust) does not work with
-Mickledore at the moment because bitbake's `classes` directory was split up into
-`classes-global`, `classes-recipe`, and `classes`. The rust recipes in openembedded-core
-are in `classes-recipe` and are thus always found before the rust recipes in `meta-rust`
-that are supposed to override them, as they are there located in `classes`.
-
-A workaround is to cherry-pick a series of commits from upstream oe/master:
-   * [39e05f9b0fdc3f76f8b80a12989f78614bc9ea5c](https://github.com/openembedded/openembedded-core/commit/39e05f9b0fdc3f76f8b80a12989f78614bc9ea5c)
-   * [d1af583c290eb0cff5e36363f7531832a863a1a8](https://github.com/openembedded/openembedded-core/commit/d1af583c290eb0cff5e36363f7531832a863a1a8)
-   * [c3eba94ee44adcd3a0aa61f6b087c15c02e4697f](https://github.com/openembedded/openembedded-core/commit/c3eba94ee44adcd3a0aa61f6b087c15c02e4697f)
-   * [ad4369d7901c1239e5f07473b1f2517edc4a23ea](https://github.com/openembedded/openembedded-core/commit/ad4369d7901c1239e5f07473b1f2517edc4a23ea)
-   * [30637cdeb31fae02544fdc643a455d0ebb126ee6](https://github.com/openembedded/openembedded-core/commit/30637cdeb31fae02544fdc643a455d0ebb126ee6)
-   * [d1386bbf2211c7616527e62f2f7b069a935b0d68](https://github.com/openembedded/openembedded-core/commit/d1386bbf2211c7616527e62f2f7b069a935b0d68)
-   * [728c40b939c6af6358a483237298ca834cbb8993](https://github.com/openembedded/openembedded-core/commit/728c40b939c6af6358a483237298ca834cbb8993)
-
-into your local openembedded-core layer.
 
 ## Compiling the Skia Renderer
 
