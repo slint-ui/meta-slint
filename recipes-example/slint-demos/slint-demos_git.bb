@@ -39,7 +39,7 @@ do_configure:append() {
     (cd ${S} && cargo update -p half --precise 2.2.1)
 }
 
-EXTRA_CARGO_FLAGS = "-p slide_puzzle -p printerdemo -p gallery -p opengl_texture -p opengl_underlay -p energy-monitor"
+EXTRA_CARGO_FLAGS = "-p slide_puzzle"
 CARGO_FEATURES = "slint/backend-linuxkms slint/renderer-skia"
 
 do_compile:prepend() {
@@ -47,6 +47,9 @@ do_compile:prepend() {
     export CURL_CA_BUNDLE
 }
 do_compile:append() {
+    for p in printerdemo gallery opengl_texture opengl_underlay energy-monitor; do
+        cargo build ${CARGO_BUILD_FLAGS} $p
+    done
     rm -f "${CARGO_BINDIR}"/*.so
     rm -f "${CARGO_BINDIR}"/*.rlib
 }
