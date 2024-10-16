@@ -48,7 +48,7 @@ do_compile:prepend() {
 }
 do_compile:append() {
     for p in printerdemo gallery opengl_texture opengl_underlay energy-monitor; do
-        cargo build ${CARGO_BUILD_FLAGS} $p
+        cargo build ${CARGO_BUILD_FLAGS} -p $p
     done
     rm -f "${CARGO_BINDIR}"/*.so
     rm -f "${CARGO_BINDIR}"/*.rlib
