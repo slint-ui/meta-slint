@@ -28,10 +28,10 @@ jobs:
           sudo locale-gen en_US.UTF-8
           sudo update-locale
       - run: |
-          git clone -b kirkstone --single-branch git://git.yoctoproject.org/poky
-          git clone -b kirkstone --single-branch git://git.openembedded.org/meta-openembedded
-          git clone -b master --single-branch https://github.com/rust-embedded/meta-rust-bin.git
-          git clone -b kirkstone --single-branch https://github.com/kraj/meta-clang.git
+          git clone -b kirkstone git://git.yoctoproject.org/poky
+          git clone -b kirkstone git://git.openembedded.org/meta-openembedded
+          git clone -b master https://github.com/rust-embedded/meta-rust-bin.git
+          git clone -b kirkstone https://github.com/kraj/meta-clang.git
       - run: |
           cd poky
           . oe-init-build-env
@@ -43,6 +43,17 @@ jobs:
           echo 'MACHINE = "qemuarm64"' >> conf/local.conf
           echo 'CLANGSDK = "1"' >> conf/local.conf
           echo 'PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-testing"' >> conf/local.conf
+      - run: |
+          cd poky
+          . oe-init-build-env
+          bitbake -c compile slint-hello-world
+          bitbake -c compile slint-demos
+      - run: |
+          for dir in poky meta-openembedded meta-clang; do
+              pushd $dir
+              git checkout -f scarthgap
+              popd
+          done
       - run: |
           cd poky
           . oe-init-build-env
