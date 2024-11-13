@@ -1,0 +1,42 @@
+name: Build SDKs for Slint CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare_env:
+    runs-on: ubuntu-latest
+    name: Create new Hetzner Cloud instance for build
+    steps:
+      - uses: stonemaster/hetzner-github-runner@v2
+        with:
+          github-api-key: ${{ secrets.GH_API_KEY }}
+          hetzner-api-key: ${{ secrets.HETZNER_API_KEY }}
+          hetzner-instance-type: cpx41
+
+  build:
+    runs-on: self-hosted
+    needs: prepare_env
+  
+    steps:
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3 python3-distutils
+          sudo locale-gen en_US.UTF-8
+          sudo update-locale
+      - run: |
+          git clone -b kirkstone git://git.yoctoproject.org/poky
+          git clone -b kirkstone git://git.openembedded.org/meta-openembedded
+          git clone -b kirkstone https://github.com/kraj/meta-clang.git
+      - run: |
+          cd poky
+          . oe-init-build-env
+          bitbake-layers add-layer ../../meta-openembedded/meta-oe
+          bitbake-layers add-layer ../../meta-clang
+          echo 'PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"' >> conf/local.conf
+          echo 'MACHINE = "qemuarm"' >> conf/local.conf
+          echo 'CLANGSDK = "1"' >> conf/local.conf
+      - run: |
+          cd poky
+          . oe-init-build-env
+          bitbake core-image-weston-sdk -c populate_sdk
