@@ -25,9 +25,9 @@ jobs:
           sudo locale-gen en_US.UTF-8
           sudo update-locale
       - run: |
-          git clone -b kirkstone git://git.yoctoproject.org/poky
-          git clone -b kirkstone git://git.openembedded.org/meta-openembedded
-          git clone -b kirkstone https://github.com/kraj/meta-clang.git
+          git clone -b scarthgap git://git.yoctoproject.org/poky
+          git clone -b scarthgap git://git.openembedded.org/meta-openembedded
+          git clone -b scarthgap https://github.com/kraj/meta-clang.git
       - run: |
           cd poky
           . oe-init-build-env
@@ -40,3 +40,7 @@ jobs:
           cd poky
           . oe-init-build-env
           bitbake core-image-weston-sdk -c populate_sdk
+      - run: |
+          for file in tmp/deploy/images/poky-glibc-*-core-image-weston*toolchain*; do
+              curl -T $file -H "X-Requested-With: XMLHttpRequest" -u ${{ secrets.NEXTCLOUD_SDK_FOLDER_TOKEN }}: "${{ secrets.NEXTCLOUD_SDK_URL }}/$file"
+          done
