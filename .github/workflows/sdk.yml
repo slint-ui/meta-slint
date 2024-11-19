@@ -33,7 +33,6 @@ jobs:
           . oe-init-build-env
           bitbake-layers add-layer ../../meta-openembedded/meta-oe
           bitbake-layers add-layer ../../meta-clang
-          echo 'PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"' >> conf/local.conf
           echo 'MACHINE = "qemuarm"' >> conf/local.conf
           echo 'CLANGSDK = "1"' >> conf/local.conf
       - run: |
