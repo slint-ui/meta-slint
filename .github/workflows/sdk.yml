@@ -51,6 +51,6 @@ jobs:
       - run: |
           cd poky
           . oe-init-build-env
-          for file in tmp/deploy/images/poky-glibc-*-core-image-weston*toolchain*; do
+          for file in tmp/deploy/sdk/poky-glibc-*-core-image-weston*toolchain*; do
               curl -T $file -H "X-Requested-With: XMLHttpRequest" -u ${{ secrets.NEXTCLOUD_SDK_FOLDER_TOKEN }}: "${{ secrets.NEXTCLOUD_SDK_URL }}/$file"
           done
