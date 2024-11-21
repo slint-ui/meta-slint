@@ -19,25 +19,34 @@ jobs:
     needs: prepare_env
   
     steps:
-      - run: |
+      - name: "Set up build env"
+        run: |
           sudo apt-get update
           sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3 python3-distutils
           sudo locale-gen en_US.UTF-8
           sudo update-locale
-      - run: |
+      - name: "Fetch Yocto Sources"
+        run: |
           git clone -b scarthgap git://git.yoctoproject.org/poky
           git clone -b scarthgap git://git.openembedded.org/meta-openembedded
           git clone -b scarthgap https://github.com/kraj/meta-clang.git
-      - run: |
+      - name: "Set up Layers, local.conf"
+        run: |
           cd poky
           . oe-init-build-env
           bitbake-layers add-layer ../../meta-openembedded/meta-oe
           bitbake-layers add-layer ../../meta-clang
           echo 'MACHINE = "qemuarm"' >> conf/local.conf
-          echo 'CLANGSDK = "1"' >> conf/local.conf
-      - run: |
+      - name: Initial build (without clang)
+        run: |
           cd poky
           . oe-init-build-env
+          bitbake core-image-weston-sdk -c populate_sdk
+      - name: Second build, but with clang (to avoid OOM)
+        run: |
+          cd poky
+          . oe-init-build-env
+          echo 'CLANGSDK = "1"' >> conf/local.conf
           bitbake core-image-weston-sdk -c populate_sdk
       - run: |
           cd poky
