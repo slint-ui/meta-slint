@@ -12,7 +12,7 @@ jobs:
         with:
           github-api-key: ${{ secrets.GH_API_KEY }}
           hetzner-api-key: ${{ secrets.HETZNER_API_KEY }}
-          hetzner-instance-type: cpx41
+          hetzner-instance-type: cpx51
 
   build:
     runs-on: self-hosted
