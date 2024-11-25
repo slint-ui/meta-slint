@@ -12,7 +12,7 @@ jobs:
         with:
           github-api-key: ${{ secrets.GH_API_KEY }}
           hetzner-api-key: ${{ secrets.HETZNER_API_KEY }}
-          hetzner-instance-type: cpx41
+          hetzner-instance-type: cpx51
 
   build:
     runs-on: self-hosted
@@ -43,19 +43,25 @@ jobs:
           echo 'MACHINE = "qemuarm64"' >> conf/local.conf
           echo 'CLANGSDK = "1"' >> conf/local.conf
           echo 'PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-testing"' >> conf/local.conf
-      - run: |
+          echo 'TOOLCHAIN_HOST_TASK:append = " nativesdk-slint-cpp"' >> conf/local.conf
+      - name: "Build Package and Demos"
+        run: |
           cd poky
           . oe-init-build-env
           bitbake -c compile slint-hello-world
           bitbake -c compile slint-demos
-      - run: |
+          bitbake core-image-minimal -c populate_sdk
+      - name: "Switch to Scarthgap"
+        run: |
           for dir in poky meta-openembedded meta-clang; do
               pushd $dir
               git checkout -f scarthgap
               popd
           done
-      - run: |
+      - name: "Build Package and Demos"
+        run: |
           cd poky
           . oe-init-build-env
           bitbake -c compile slint-hello-world
           bitbake -c compile slint-demos
+          bitbake core-image-minimal -c populate_sdk
