@@ -1,20 +1,19 @@
-From 6d0ba81a8a836a88d176c0021f97e94126cfc556 Mon Sep 17 00:00:00 2001
+From 2a964dabf86f7b1cdcc554b598d09b07ff52ce40 Mon Sep 17 00:00:00 2001
 From: Simon Hausmann <simon.hausmann@slint-ui.com>
 Date: Sun, 18 Jun 2023 11:35:07 +0200
 Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
 
  when building with Ycoto
-
 ---
  Cargo.toml | 3 +++
  1 file changed, 3 insertions(+)
 
 diff --git a/Cargo.toml b/Cargo.toml
-index a836c3adf..c65f0dfec 100644
+index 1be45f0fe..a9e51ea3f 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -143,6 +143,9 @@ cfg_aliases = { version = "0.2.0" }
- 
+@@ -161,6 +161,9 @@ smol_str = { version = "0.3.1" }
+ rayon = { version = "1.10.0", default-features = false }
  raw-window-handle-06 = { package = "raw-window-handle", version = "0.6", features = ["alloc"] }
  
 +[patch.crates-io]
