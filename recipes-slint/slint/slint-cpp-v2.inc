@@ -54,6 +54,13 @@ do_configure[network] = "1"
 # For crate dependencies from crates.io
 do_compile[network] = "1"
 
+do_configure:prepend:class-nativesdk() {
+    # Since Corrosion decides that the native build is not a cross-build, it won't forward CMAKE_SYSROOT.
+    # The sysroot however is instrumental, so pass it along via the toolchain and the cargo compile wrappers.
+    echo "set(CMAKE_C_COMPILER \"${WRAPPER_DIR}/cc-wrapper.sh\")" >> ${WORKDIR}/toolchain.cmake
+    echo "set(CMAKE_CXX_COMPILER \"${WRAPPER_DIR}/cxx-wrapper.sh\")" >> ${WORKDIR}/toolchain.cmake
+}
+
 do_configure() {
     echo "set(CMAKE_SYSROOT \"${RECIPE_SYSROOT}\")" >> ${WORKDIR}/toolchain.cmake
     cargo_bin_do_configure
