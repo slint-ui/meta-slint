@@ -1,8 +1,7 @@
-From c5811dc2ac56ea159744a0a962dc900f21c86340 Mon Sep 17 00:00:00 2001
+From b32e84040f03b148ef1d6033bbba65b86bec8d6a Mon Sep 17 00:00:00 2001
 From: Simon Hausmann <simon.hausmann@slint-ui.com>
 Date: Sun, 18 Jun 2023 11:35:07 +0200
 Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
-
  when building with Ycoto
 
 ---
@@ -10,10 +9,10 @@ Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
  1 file changed, 3 insertions(+)
 
 diff --git a/Cargo.toml b/Cargo.toml
-index 23c969504..89a4ba535 100644
+index 55dcc5405..9281e2ae4 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -142,6 +142,9 @@ cfg_aliases = { version = "0.2.0" }
+@@ -143,6 +143,9 @@ cfg_aliases = { version = "0.2.0" }
  
  raw-window-handle-06 = { package = "raw-window-handle", version = "0.6", features = ["alloc"] }
  
