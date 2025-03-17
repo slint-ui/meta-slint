@@ -8,14 +8,16 @@ jobs:
     runs-on: ubuntu-latest
     name: Create new Hetzner Cloud instance for build
     steps:
-      - uses: stonemaster/hetzner-github-runner@v2
+      - uses: Cyclenerd/hcloud-github-runner@v1
+        id: create-runner
         with:
-          github-api-key: ${{ secrets.GH_API_KEY }}
-          hetzner-api-key: ${{ secrets.HETZNER_API_KEY }}
-          hetzner-instance-type: cpx41
+          mode: create
+          github_token: ${{ secrets.GH_API_KEY }}
+          hcloud_token: ${{ secrets.HETZNER_API_KEY }}
+          server_type: cpx41
 
   build:
-    runs-on: self-hosted
+    runs-on: ${{ needs.prepare_env.outputs.label }}
     needs: prepare_env
   
     steps:
@@ -67,3 +69,20 @@ jobs:
           bitbake -c compile slint-hello-world
           bitbake -c compile slint-demos
           bitbake core-image-minimal -c populate_sdk
+
+  delete-runner:
+    name: Delete Runner
+    needs:
+      - prepare_env
+      - build
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Delete runner
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: delete
+          github_token: ${{ secrets.GH_API_KEY }}
+          hcloud_token: ${{ secrets.HETZNER_API_KEY }}
+          name: ${{ needs.prepare_env.outputs.label }}
+          server_id: ${{ needs.prepare_env.outputs.server_id }}
