@@ -17,7 +17,7 @@ jobs:
           server_type: cpx41
 
   build:
-    runs-on: ${{ needs.prepare_env.outputs.label }}
+    runs-on: ${{ prepare_env.create-runner.outputs.label }}
     needs: prepare_env
   
     steps:
@@ -84,5 +84,5 @@ jobs:
           mode: delete
           github_token: ${{ secrets.GH_API_KEY }}
           hcloud_token: ${{ secrets.HETZNER_API_KEY }}
-          name: ${{ needs.prepare_env.outputs.label }}
-          server_id: ${{ needs.prepare_env.outputs.server_id }}
+          name: ${{ prepare_env.create-runner.outputs.label }}
+          server_id: ${{ prepare_env.create-runner.outputs.server_id }}
