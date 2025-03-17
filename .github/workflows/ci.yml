@@ -7,6 +7,9 @@ jobs:
   prepare_env:
     runs-on: ubuntu-latest
     name: Create new Hetzner Cloud instance for build
+    outputs:
+      label: ${{ steps.create-runner.outputs.label }}
+      server_id: ${{ steps.create-runner.outputs.server_id }}
     steps:
       - uses: Cyclenerd/hcloud-github-runner@v1
         id: create-runner
@@ -17,7 +20,7 @@ jobs:
           server_type: cpx41
 
   build:
-    runs-on: ${{ prepare_env.create-runner.outputs.label }}
+    runs-on: ${{needs.prepare_env.outputs.label }}
     needs: prepare_env
   
     steps:
@@ -84,5 +87,5 @@ jobs:
           mode: delete
           github_token: ${{ secrets.GH_API_KEY }}
           hcloud_token: ${{ secrets.HETZNER_API_KEY }}
-          name: ${{ prepare_env.create-runner.outputs.label }}
-          server_id: ${{ prepare_env.create-runner.outputs.server_id }}
+          name: ${{ needs.prepare_env.outputs.label }}
+          server_id: ${{ needs.prepare_env.outputs.server_id }}
