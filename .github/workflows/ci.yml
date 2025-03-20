@@ -17,7 +17,7 @@ jobs:
           mode: create
           github_token: ${{ secrets.GH_API_KEY }}
           hcloud_token: ${{ secrets.HETZNER_API_KEY }}
-          server_type: ccx43
+          server_type: cpx51
 
   build:
     runs-on: ${{needs.prepare_env.outputs.label }}
