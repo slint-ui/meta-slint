@@ -39,16 +39,16 @@ jobs:
           echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
       - name: "ci setup"
         run: |
-          su - build -c "cd ${{ runner.workspace }}/meta-slint && scripts/ci_setup.sh"
+          su - build -c "cd ${{ runner.workspace }}/meta-slint && ls -l && ls -l scripts && scripts/ci_setup.sh"
       - name: "test kirkstone"
         run: |
-          su - build -c "cd ${{ runner.workspace }}/meta-slint && scripts/ci.sh kirkstone"
+          su - build -c "cd ${{ runner.workspace }}/meta-slint && ls -l && ls -l scripts && scripts/ci.sh kirkstone"
       - name: "test scarthgap"
         run: |
-          su - build -c "cd ${{ runner.workspace }}/meta-slint && scripts/ci.sh scarthgap"
+          su - build -c "cd ${{ runner.workspace }}/meta-slint && ls -l && ls -l scripts && scripts/ci.sh scarthgap"
       - name: "test dunfell"
         run: |
-          su - build -c "cd ${{ runner.workspace }}/meta-slint && scripts/ci.sh dunfell"
+          su - build -c "cd ${{ runner.workspace }}/meta-slint && ls -l && ls -l scripts && scripts/ci.sh dunfell"
   
   delete-runner:
     name: Delete Runner
