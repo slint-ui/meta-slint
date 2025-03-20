@@ -22,57 +22,34 @@ jobs:
   build:
     runs-on: ${{needs.prepare_env.outputs.label }}
     needs: prepare_env
-  
+
     steps:
       - uses: actions/checkout@v3
         with:
             path: 'meta-slint'
-      - run: |
+      - name: dependency setup
+        run: |
           sudo apt-get update
           sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3
           sudo locale-gen en_US.UTF-8
           sudo update-locale
-      - run: |
-          git clone -b kirkstone git://git.yoctoproject.org/poky
-          git clone -b kirkstone git://git.openembedded.org/meta-openembedded
-          git clone -b master https://github.com/rust-embedded/meta-rust-bin.git
-          git clone -b kirkstone https://github.com/kraj/meta-clang.git
-      - run: |
-          cd poky
-          . oe-init-build-env
-          bitbake-layers add-layer ../../meta-openembedded/meta-oe
-          bitbake-layers add-layer ../../meta-rust-bin
-          bitbake-layers add-layer ../../meta-clang
-          bitbake-layers add-layer ../../meta-slint
-          echo 'PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"' >> conf/local.conf
-          echo 'MACHINE = "qemuarm64"' >> conf/local.conf
-          echo 'CLANGSDK = "1"' >> conf/local.conf
-          echo 'PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-testing"' >> conf/local.conf
-          echo 'TOOLCHAIN_HOST_TASK:append = " nativesdk-slint-cpp"' >> conf/local.conf
-          #echo 'PREFERRED_VERSION_slint-cpp = "1.9.2"' >> conf/local.conf
-          #echo 'PREFERRED_VERSION_slint-cpp-native = "1.9.2"' >> conf/local.conf
-      - name: "Build Package and Demos"
+      - name: "user setup"
         run: |
-          cd poky
-          . oe-init-build-env
-          bitbake -c compile slint-hello-world
-          bitbake -c compile slint-demos
-          bitbake core-image-minimal -c populate_sdk
-      - name: "Switch to Scarthgap"
+          useradd -m build
+          echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
+      - name: "ci setup"
         run: |
-          for dir in poky meta-openembedded meta-clang; do
-              pushd $dir
-              git checkout -f scarthgap
-              popd
-          done
-      - name: "Build Package and Demos"
+          su - build -c "scripts/ci_setup.sh"
+      - name: "test kirkstone"
         run: |
-          cd poky
-          . oe-init-build-env
-          bitbake -c compile slint-hello-world
-          bitbake -c compile slint-demos
-          bitbake core-image-minimal -c populate_sdk
-
+          su - build -c "scripts/ci.sh kirkstone"
+      - name: "test scarthgap"
+        run: |
+          su - build -c "scripts/ci.sh scarthgap"
+      - name: "test dunfell"
+        run: |
+          su - build -c "scripts/ci.sh dunfell"
+  
   delete-runner:
     name: Delete Runner
     needs:
