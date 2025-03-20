@@ -1,10 +1,10 @@
 #!/bin/bash
 set -ex
 
-git clone git://git.yoctoproject.org/poky
-git clone git://git.openembedded.org/meta-openembedded
+git clone -b kirkstone git://git.yoctoproject.org/poky
+git clone -b kirkstone git://git.openembedded.org/meta-openembedded
 git clone -b master https://github.com/rust-embedded/meta-rust-bin.git
-git clone https://github.com/kraj/meta-clang.git
+git clone -b kirkstone https://github.com/kraj/meta-clang.git
 
 cd poky
 . oe-init-build-env
