@@ -3,6 +3,7 @@
 set -ex
 
 branch=$1
+shift
 
 for dir in poky meta-openembedded meta-clang; do
     pushd $dir
