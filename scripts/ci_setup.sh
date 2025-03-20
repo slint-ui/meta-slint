@@ -12,6 +12,7 @@ bitbake-layers add-layer ../../meta-openembedded/meta-oe
 bitbake-layers add-layer ../../meta-rust-bin
 bitbake-layers add-layer ../../meta-clang
 bitbake-layers add-layer ../../meta-slint
+bitbake-layers show-layers
 echo 'PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"' >> conf/local.conf
 echo 'MACHINE = "qemuarm64"' >> conf/local.conf
 echo 'CLANGSDK = "1"' >> conf/local.conf

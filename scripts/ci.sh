@@ -6,6 +6,7 @@ branch=$1
 
 for dir in poky meta-openembedded meta-clang; do
     pushd $dir
+    git status
     git checkout -f $branch
     popd
 done
