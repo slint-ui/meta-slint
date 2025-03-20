@@ -37,6 +37,7 @@ jobs:
         run: |
           useradd -m build
           echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
+          chown -R build:build ${{ runner.workspace }}
       - name: "ci setup"
         run: |
           su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci_setup.sh"
