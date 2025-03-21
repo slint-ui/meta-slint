@@ -42,9 +42,6 @@ jobs:
       - name: "ci setup"
         run: |
           su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci_setup.sh"
-      - name: "test kirkstone"
-        run: |
-          su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci.sh kirkstone"
       - name: "test scarthgap"
         run: |
           su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci.sh scarthgap"

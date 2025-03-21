@@ -1,10 +1,10 @@
 #!/bin/bash
 set -ex
 
-git clone -b kirkstone git://git.yoctoproject.org/poky
-git clone -b kirkstone git://git.openembedded.org/meta-openembedded
+git clone -b scarthgap git://git.yoctoproject.org/poky
+git clone -b scarthgap git://git.openembedded.org/meta-openembedded
 git clone -b master https://github.com/rust-embedded/meta-rust-bin.git
-git clone -b kirkstone https://github.com/kraj/meta-clang.git
+git clone -b scarthgap https://github.com/kraj/meta-clang.git
 
 cd poky
 . oe-init-build-env
@@ -18,3 +18,4 @@ echo 'MACHINE = "qemuarm64"' >> conf/local.conf
 echo 'CLANGSDK = "1"' >> conf/local.conf
 echo 'PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-testing"' >> conf/local.conf
 echo 'TOOLCHAIN_HOST_TASK:append = " nativesdk-slint-cpp"' >> conf/local.conf
+echo 'INHERIT:remove = "create-spdx"' >> conf/local.conf
