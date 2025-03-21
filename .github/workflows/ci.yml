@@ -45,10 +45,7 @@ jobs:
       - name: "test scarthgap"
         run: |
           su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci.sh scarthgap"
-      - name: "test dunfell"
-        run: |
-          su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci.sh dunfell"
-  
+
   delete-runner:
     name: Delete Runner
     needs:
