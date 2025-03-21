@@ -18,4 +18,3 @@ echo 'MACHINE = "qemuarm64"' >> conf/local.conf
 echo 'CLANGSDK = "1"' >> conf/local.conf
 echo 'PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-testing"' >> conf/local.conf
 echo 'TOOLCHAIN_HOST_TASK:append = " nativesdk-slint-cpp"' >> conf/local.conf
-echo 'INSANE_SKIP_${PN} += "patch-fuzz"' >> conf/local.conf
