@@ -13,7 +13,7 @@ LICENSE = "GPLv3 | Slint-Commercial"
 
 inherit slint_common
 
-PV = "1.10.0+git"
+PV = "1.11.0+git"
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
