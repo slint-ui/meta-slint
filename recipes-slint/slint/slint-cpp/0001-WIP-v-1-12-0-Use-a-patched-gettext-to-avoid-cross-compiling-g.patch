@@ -1,0 +1,24 @@
+From df82297a24d708c16e49ff958dd726ea17dc8034 Mon Sep 17 00:00:00 2001
+From: Simon Hausmann <simon.hausmann@slint-ui.com>
+Date: Sun, 18 Jun 2023 11:35:07 +0200
+Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
+ when building with Ycoto
+
+---
+ Cargo.toml | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 49cda7b9a..a4022314c 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -168,6 +168,9 @@ glow = { version = "0.16" }
+ tikv-jemallocator = { version = "0.6" }
+ wgpu-24 = { package = "wgpu", version = "24", default-features = false }
+ 
++[patch.crates-io]
++gettext-sys = { git = "https://github.com/slint-ui/gettext-rs", branch = "simon/fix-linux-detection" }
++
+ [profile.release]
+ lto = true
+ panic = "abort"
