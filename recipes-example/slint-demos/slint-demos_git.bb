@@ -34,11 +34,6 @@ S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native"
 
-do_configure:append() {
-    # Work around current half not cross-compiling well
-    (cd ${S} && cargo update -p half --precise 2.2.1)
-}
-
 EXTRA_CARGO_FLAGS = "-p slide_puzzle"
 CARGO_FEATURES = "slint/backend-linuxkms slint/renderer-skia"
 
