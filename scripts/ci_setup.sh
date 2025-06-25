@@ -19,5 +19,5 @@ echo 'CLANGSDK = "1"' >> conf/local.conf
 echo 'PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-testing"' >> conf/local.conf
 echo 'TOOLCHAIN_HOST_TASK:append = " nativesdk-slint-cpp"' >> conf/local.conf
 echo 'INHERIT:remove = "create-spdx"' >> conf/local.conf
-echo 'PREFERRED_VERSION_slint-cpp = "1.12.0"' >> conf/local.conf
-echo 'PREFERRED_VERSION_slint-cpp-native = "1.12.0"' >> conf/local.conf
+echo 'PREFERRED_VERSION_slint-cpp = "1.12.1"' >> conf/local.conf
+echo 'PREFERRED_VERSION_slint-cpp-native = "1.12.1"' >> conf/local.conf
