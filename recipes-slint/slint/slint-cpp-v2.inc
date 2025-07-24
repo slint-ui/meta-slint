@@ -9,7 +9,7 @@ crate from crates.io."
 HOMEPAGE = "https://github.com/slint-ui/slint"
 BUGTRACKER = "https://github.com/slint-ui/slint/issues"
 
-LICENSE = "GPLv3 | Slint-Commercial"
+LICENSE = "GPLv3|Slint-Commercial"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a71019dc9c240d7add35e9d036870929"
 
 inherit cmake
