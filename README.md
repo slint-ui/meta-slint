@@ -89,9 +89,21 @@ environment enables an additional `fus-image-slint-demos` image target.
 Steps:
   - Add `meta-slint`
   - Add [meta-clang](https://github.com/kraj/meta-clang)
-  - Add [meta-rust](https://github.com/meta-rust/meta-rust)
+  - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
   - Edit your `conf/local.conf`:
     - Make sure `DISTRO` is set to `"fus-imx-wayland"`
-    - Select the Rust version from `meta-rust` by adding this line (adjust path to layer accordingly):
-      `include ../../sources/meta-rust/conf/distro/include/rust_versions.inc`
   - Run `bitbake fus-image-slint-demos` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
+
+## Renesas Arm-based MPUs
+
+When building for Renesas Arm-based MPUs with the [meta-renesas](https://github.com/renesas-rz/meta-renesas) layer,
+adding this `meta-slint` layer to your environment enables an additional `core-image-slint` image target.
+
+Steps:
+  - Add `meta-slint`
+  - Add [meta-clang](https://github.com/kraj/meta-clang)
+  - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
+  - Edit your `conf/local.conf`:
+    - Make sure `DISTRO` is set to `"fus-imx-wayland"`
+  - Run `bitbake core-image-slint` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
+
