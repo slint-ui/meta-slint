@@ -42,7 +42,7 @@ do_compile:prepend() {
     export CURL_CA_BUNDLE
 }
 do_compile:append() {
-    for p in printerdemo gallery opengl_texture opengl_underlay energy-monitor; do
+    for p in printerdemo gallery opengl_texture opengl_underlay energy-monitor home-automation; do
         cargo build ${CARGO_BUILD_FLAGS} -p $p
     done
     rm -f "${CARGO_BINDIR}"/*.so
