@@ -103,5 +103,5 @@ Steps:
   - Add `meta-slint`
   - Add [meta-clang](https://github.com/kraj/meta-clang)
   - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
-  - Run `bitbake core-image-slint` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
+  - Run `bitbake core-image-slint-demos` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
 
