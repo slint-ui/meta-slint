@@ -9,7 +9,7 @@ SUMMARY = "Various Rust-based demos of Slint packaged up in /usr/bin"
 DESCRIPTION = "This recipe builds various Slint demos such as the energy monitor \
 or the printer demo and installs the binaries into /usr/bin."
 HOMEPAGE = "https://slint.dev/"
-LICENSE = "GPLv3|Slint-Commercial"
+LICENSE = "GPL-3.0-only | Slint-Commercial"
 
 inherit slint_common
 

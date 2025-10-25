@@ -5,7 +5,7 @@ SRC_URI = "git://github.com/slint-ui/slint-cpp-template.git;protocol=https;branc
 
 SUMMARY = "Work in progress recipe for Slint Hello World"
 HOMEPAGE = "https://github.com/slint-ui/slint"
-LICENSE = "GPLv3|Slint-Commercial"
+LICENSE = "GPL-3.0-only | Slint-Commercial"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=9e911597e678943cde54111f7518e299"
 
 S = "${WORKDIR}/git"
