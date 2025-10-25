@@ -1,5 +1,5 @@
 SUMMARY = "Framework sample Slint components with linuxkms backend"
-LICENSE = "GPLv3|Slint-Commercial"
+LICENSE = "GPL-3.0-only | Slint-Commercial"
 
 inherit packagegroup features_check
 

@@ -1,5 +1,5 @@
 SUMMARY = "ST example of image based on Slint framework."
-LICENSE = "GPLv3|Slint-Commercial"
+LICENSE = "GPL-3.0-only | Slint-Commercial"
 
 include recipes-st/images/st-image.inc
 
