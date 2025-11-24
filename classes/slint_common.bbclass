@@ -1,7 +1,6 @@
 TARGET_CFLAGS:remove = "-fcanon-prefix-map"
 
 do_compile:prepend() {
-    export RUST_FONTCONFIG_DLOPEN=on
     #export RUSTFLAGS="${RUSTFLAGS}"
     #export RUST_TARGET_PATH="${RUST_TARGET_PATH}"
     # Make sure that Skia's invocation of clang to generate bindings.rs for the Skia headers
