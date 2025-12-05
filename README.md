@@ -29,12 +29,13 @@ set `PREFERRED_VERSION_slint-cpp = "x.x.x"` and `PREFERRED_VERSION_slint-cpp-nat
 For git builds and builds from Slint version 1.3 onwards, certain features are
 configurable via `PACKAGECONFIG`.
 
-| Feature Name       | Description                         | Enabled by Default |
-|--------------------|-------------------------------------|--------------------|
-| `renderer-skia`    | Skia OpenGL renderer                | No                 |
-| `renderer-femtovg` | Lightweight FemtoVG OpenGL renderer | Yes                |
-| `backend-linuxkms` | Backend for rendering via KMS/DRM   | No                 |
-| `interpreter`      | C++ API for Slint Interpreter       | Yes                |
+| Feature Name        | Description                         | Enabled by Default |
+|---------------------|-------------------------------------|--------------------|
+| `renderer-skia`     | Skia OpenGL renderer                | No                 |
+| `renderer-femtovg`  | Lightweight FemtoVG OpenGL renderer | Yes                |
+| `backend-linuxkms`  | Backend for rendering via KMS/DRM   | No                 |
+| `renderer-software` | Slint softwware renderer            | Yes                |
+| `interpreter`       | C++ API for Slint Interpreter       | Yes                |
 
 Set the `PACKAGECONFIG:pn-slint-cpp` variable in your `conf/local.conf` to tweak.
 For example, to disable the FemtoVG renderer, enable Skia, and the linuxkms

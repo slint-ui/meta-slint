@@ -29,7 +29,7 @@ EXTRA_OECMAKE:append:class-target = " -DSLINT_COMPILER=/\$ENV{OECORE_NATIVE_SYSR
 PACKAGECONFIG:append:class-native = "slint-compiler"
 PACKAGECONFIG:class-nativesdk = "slint-compiler"
 PACKAGECONFIG:append:class-target = " \
-    slint-runtime renderer-femtovg interpreter \
+    slint-runtime renderer-femtovg renderer-software interpreter \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'backend-winit-wayland', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'backend-winit-x11', '', d)} \
 "
@@ -39,6 +39,7 @@ PACKAGECONFIG[slint-runtime] = "-DSLINT_BUILD_RUNTIME=ON, -DSLINT_BUILD_RUNTIME=
 PACKAGECONFIG[backend-linuxkms] = "-DSLINT_FEATURE_BACKEND_LINUXKMS=ON, -DSLINT_FEATURE_BACKEND_LINUXKMS=OFF,libdrm virtual/egl virtual/libgbm seatd udev libinput"
 PACKAGECONFIG[renderer-skia] = "-DSLINT_FEATURE_RENDERER_SKIA=ON, -DSLINT_FEATURE_RENDERER_SKIA=OFF,clang-cross-${TARGET_ARCH}"
 PACKAGECONFIG[renderer-femtovg] = "-DSLINT_FEATURE_RENDERER_FEMTOVG=ON, -DSLINT_FEATURE_RENDERER_FEMTOVG=OFF,"
+PACKAGECONFIG[renderer-software] = "-DSLINT_FEATURE_RENDERER_SOFTWARE=ON, -DSLINT_FEATURE_RENDERER_SOFTWARE=OFF,"
 PACKAGECONFIG[interpreter] = "-DSLINT_FEATURE_INTERPRETER=ON, -DSLINT_FEATURE_INTERPRETER=OFF,"
 PACKAGECONFIG[backend-winit-wayland] = "-DSLINT_FEATURE_BACKEND_WINIT_WAYLAND=ON, -DSLINT_FEATURE_BACKEND_WINIT_WAYLAND=OFF,wayland"
 PACKAGECONFIG[backend-winit-x11] = "-DSLINT_FEATURE_BACKEND_WINIT_X11=ON, -DSLINT_FEATURE_BACKEND_WINIT_X11=OFF,libxcb"
