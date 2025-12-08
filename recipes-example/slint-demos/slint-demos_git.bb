@@ -34,7 +34,7 @@ S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native"
 
-EXTRA_CARGO_FLAGS = "-p slide_puzzle"
+EXTRA_CARGO_FLAGS = "-p slint"
 CARGO_FEATURES = "slint/backend-linuxkms slint/renderer-skia"
 
 do_compile:prepend() {
@@ -42,7 +42,9 @@ do_compile:prepend() {
     export CURL_CA_BUNDLE
 }
 do_compile:append() {
-    for p in printerdemo gallery opengl_texture opengl_underlay energy-monitor home-automation; do
+    # Reduce RAM requirements
+    export CARGO_PROFILE_RELEASE_LTO=false
+    for p in slide_puzzle printerdemo gallery opengl_texture opengl_underlay energy-monitor home-automation; do
         cargo build ${CARGO_BUILD_FLAGS} -p $p
     done
     rm -f "${CARGO_BINDIR}"/*.so
