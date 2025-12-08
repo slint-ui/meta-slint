@@ -106,3 +106,14 @@ Steps:
   - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
   - Run `bitbake core-image-slint-demos` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
 
+## NXP i.MX Series
+
+When building for NXP i.MX series MPUs with [ themeta-imx](https://github.com/nxp-imx/meta-imx) layer,
+adding this `meta-slint` layer to your enrivonment enables an additional `imx-image-slint-demos` image target.
+
+Steps:
+  - Add `meta-slint`
+  - Add [meta-clang](https://github.com/kraj/meta-clang)
+  - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
+  - Run `bitbake imx-image-slint-demos` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
+

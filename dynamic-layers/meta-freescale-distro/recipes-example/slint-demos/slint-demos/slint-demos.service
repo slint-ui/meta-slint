@@ -1,0 +1,8 @@
+[Unit]
+Description=Startup script to launch Slint demo(s) on startup
+
+[Service]
+ExecStart=/usr/bin/home-automation
+
+[Install]
+WantedBy=multi-user.target
