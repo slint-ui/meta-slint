@@ -108,7 +108,7 @@ Steps:
 
 ## NXP i.MX Series
 
-When building for NXP i.MX series MPUs with [ themeta-imx](https://github.com/nxp-imx/meta-imx) layer,
+When building for NXP i.MX series MPUs with the [meta-imx](https://github.com/nxp-imx/meta-imx) layer,
 adding this `meta-slint` layer to your enrivonment enables an additional `imx-image-slint-demos` image target.
 
 Steps:
