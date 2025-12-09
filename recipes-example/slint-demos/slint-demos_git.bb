@@ -1,9 +1,9 @@
 inherit cargo_bin
 inherit pkgconfig
 
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=0301c9d7d8b9bb6f5a90d0068503bce4f379b065"
-SRC_URI += "file://0001-WIP-v-1-13-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=47db5060638acc88cba176445dbd98b6"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=ce50ea806a9a1d512d30acab6f99c8a1d511505f"
+SRC_URI += "file://0001-WIP-v-1-14-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=e3e11de4e6652abe8c9b2d74b416f33b"
 
 SUMMARY = "Various Rust-based demos of Slint packaged up in /usr/bin"
 DESCRIPTION = "This recipe builds various Slint demos such as the energy monitor \
@@ -13,7 +13,7 @@ LICENSE = "GPL-3.0-only | Slint-Commercial"
 
 inherit slint_common
 
-PV = "1.13.1+git"
+PV = "1.14.1+git"
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
