@@ -19,7 +19,7 @@ inherit slint_common
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgl"
-RDEPENDS:${PN} += "xkeyboard-config"
+RDEPENDS:${PN}:class-target += "xkeyboard-config"
 
 SLINT_REV ?= "master"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=${SLINT_REV}"

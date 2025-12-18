@@ -24,7 +24,7 @@ DEPENDS:append:class-target = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'libxcb', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland', '', d)} \
 "
-RDEPENDS:${PN} += "xkeyboard-config"
+RDEPENDS:${PN}:class-target += "xkeyboard-config"
 
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
 
