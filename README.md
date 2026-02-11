@@ -77,7 +77,7 @@ before running the `populate_sdk` task on your image.
 
 When building for [STM32 MPU OpenSTLinux](https://www.st.com/en/embedded-software/stm32-mpu-openstlinux-distribution.html),
 adding this `meta-slint` layer to your environment enables an additional `st-example-image-slint` image target. In your
-`conf/local.conf` set `DISTRO_FEATURES:append = " opengl "` as well as `DISTRO_FEATURES:remove = " wayland x11 "` and run
+`conf/local.conf` set `DISTRO_FEATURES:append = " opengl "` as well as `DISTRO_FEATURES:remove = " wayland x11 vulkan opencl"` and run
 `bitbake st-example-image-slint` to build an image that ships various Slint demos in a minimal image. The demos run directly
 on the framebuffer with the LinuxKMS backend.
 
