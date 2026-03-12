@@ -1,7 +1,8 @@
-inherit cargo_bin
+inherit cargo
 inherit pkgconfig
 
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master"
+SRCREV = "${AUTOREV}"
 SRC_URI += "file://0001-WIP-v-1-14-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=093007ec281bbdeea447b0040b01a74d"
 
@@ -30,8 +31,6 @@ CARGO_DISABLE_BITBAKE_VENDORING = "1"
 
 do_configure[network] = "1"
 do_compile[network] = "1"
-
-S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native"
 
