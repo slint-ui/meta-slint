@@ -57,46 +57,25 @@ do_compile[network] = "1"
 
 do_configure:prepend:class-nativesdk() {
     # Since Corrosion decides that the native build is not a cross-build, it won't forward CMAKE_SYSROOT.
-    # The sysroot however is instrumental, so pass it along via the toolchain and the cargo compile wrappers.
-    echo "set(CMAKE_C_COMPILER \"${WRAPPER_DIR}/cc-wrapper.sh\")" >> ${WORKDIR}/toolchain.cmake
-    echo "set(CMAKE_CXX_COMPILER \"${WRAPPER_DIR}/cxx-wrapper.sh\")" >> ${WORKDIR}/toolchain.cmake
+    # The sysroot however is instrumental, so pass it along via the toolchain. cargo.bbclass sets up compilers directly (no wrappers)
+    echo "set(CMAKE_C_COMPILER \"${CC}\")" >> ${WORKDIR}/toolchain.cmake
+    echo "set(CMAKE_CXX_COMPILER \"${CXX}\")" >> ${WORKDIR}/toolchain.cmake
 }
 
 do_configure() {
     echo "set(CMAKE_SYSROOT \"${RECIPE_SYSROOT}\")" >> ${WORKDIR}/toolchain.cmake
-    cargo_bin_do_configure
+    cargo_common_do_configure
     cmake_do_configure
 }
 
 do_compile:prepend() {
-    # Wrappers created by cargo_bin_do_configure
-    export TARGET_CC="${WRAPPER_DIR}/cc-wrapper.sh"
-    export TARGET_CXX="${WRAPPER_DIR}/cxx-wrapper.sh"
-    export CC="${WRAPPER_DIR}/cc-native-wrapper.sh"
-    export CXX="${WRAPPER_DIR}/cxx-native-wrapper.sh"
-    export TARGET_LD="${WRAPPER_DIR}/linker-wrapper.sh"
-    export LD="${WRAPPER_DIR}/linker-native-wrapper.sh"
+    # Modern cargo.bbclass + rust-target-config.bbclass handles cross-compilation
+    # environment (CC/CXX/linkers) automatically via oe_cargo_fix_env and config.toml.
+    # Only export variables still needed for this cmake+cargo hybrid build.
     export PKG_CONFIG_ALLOW_CROSS="1"
     export LDFLAGS=""
     export RUSTFLAGS="${RUSTFLAGS}"
-    export SSH_AUTH_SOCK="${SSH_AUTH_SOCK}"
-
-    # This "DO_NOT_USE_THIS" option of cargo is currently the only way to
-    # configure a different linker for host and target builds when RUST_BUILD ==
-    # RUST_TARGET.
-    export __CARGO_TEST_CHANNEL_OVERRIDE_DO_NOT_USE_THIS="nightly"
-    export CARGO_UNSTABLE_TARGET_APPLIES_TO_HOST="true"
-    export CARGO_UNSTABLE_HOST_CONFIG="true"
-    export CARGO_TARGET_APPLIES_TO_HOST="false"
-    export CARGO_TARGET_${@rust_target(d, 'TARGET').replace('-','_').upper()}_LINKER="${WRAPPER_DIR}/linker-wrapper.sh"
-    export CARGO_HOST_LINKER="${WRAPPER_DIR}/linker-native-wrapper.sh"
-    export CARGO_BUILD_FLAGS="-C rpath"
     export CARGO_PROFILE_RELEASE_DEBUG="true"
-
-    # The CC crate defaults to using CFLAGS when compiling everything. We can
-    # give it custom flags for compiling on the host.
-    export HOST_CXXFLAGS=""
-    export HOST_CFLAGS=""
 }
 
 do_compile:prepend:class-target() {
