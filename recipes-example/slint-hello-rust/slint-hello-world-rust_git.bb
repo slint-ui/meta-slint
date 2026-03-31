@@ -1,6 +1,7 @@
-inherit cargo_bin
+inherit cargo
 
-SRC_URI = "git://github.com/slint-ui/slint-rust-template.git;protocol=https;branch=main;rev=main"
+SRC_URI = "git://github.com/slint-ui/slint-rust-template.git;protocol=https;branch=main"
+SRCREV = "${AUTOREV}"
 
 SUMMARY = "Work in progress recipe for Slint Hello World"
 HOMEPAGE = "https://github.com/slint-ui/slint"

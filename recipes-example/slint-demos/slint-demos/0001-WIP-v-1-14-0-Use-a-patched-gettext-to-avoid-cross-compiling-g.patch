@@ -4,6 +4,10 @@ Date: Sun, 18 Jun 2023 11:35:07 +0200
 Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
  when building with Yocto
 
+Upstream-Status: Inappropriate [oe-core specific]
+Signed-off-by: Simon Hausmann <simon.hausmann@slint-ui.com>
+Signed-off-by: Telukula Jeevan Kumar Sahu <j-sahu@ti.com>
+
 ---
  Cargo.toml | 3 +++
  1 file changed, 3 insertions(+)
@@ -12,8 +16,8 @@ diff --git a/Cargo.toml b/Cargo.toml
 index f6baf71a5..a0046c152 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -183,6 +183,9 @@ windows = { version = "0.62" }
- windows-core = { version = "0.62.0" }
+@@ -189,6 +189,9 @@ windows-core = { version = "0.62.0" }
+ lyon_path = { version = "1.0", default-features = false }
 
 +[patch.crates-io]
 +gettext-sys = { git = "https://github.com/slint-ui/gettext-rs", branch = "simon/fix-linux-detection" }
