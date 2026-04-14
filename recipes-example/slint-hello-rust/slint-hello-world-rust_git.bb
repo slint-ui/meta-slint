@@ -1,4 +1,4 @@
-inherit cargo_bin
+inherit cargo
 
 SRC_URI = "git://github.com/slint-ui/slint-rust-template.git;protocol=https;branch=main;rev=main"
 

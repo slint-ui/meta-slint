@@ -1,4 +1,4 @@
-inherit cargo_bin
+inherit cargo
 inherit pkgconfig
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
