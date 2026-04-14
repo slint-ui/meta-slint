@@ -31,7 +31,6 @@ CARGO_DISABLE_BITBAKE_VENDORING = "1"
 do_configure[network] = "1"
 do_compile[network] = "1"
 
-S = "${WORKDIR}/git"
 
 BBCLASSEXTEND = "native"
 
