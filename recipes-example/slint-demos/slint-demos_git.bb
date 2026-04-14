@@ -41,6 +41,12 @@ CARGO_FEATURES = "slint/backend-linuxkms slint/renderer-skia"
 do_compile:prepend() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
+    # Use the git protocol for the crates.io index instead of sparse HTTP
+    # so cargo doesn't open hundreds of HTTP/1.1 connections at once
+    # (OE-core's curl-native is built without HTTP/2 -- see commit message).
+    export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
+    export CARGO_HTTP_TIMEOUT=120
+    export CARGO_NET_RETRY=5
 }
 do_compile:append() {
     # Reduce RAM requirements
