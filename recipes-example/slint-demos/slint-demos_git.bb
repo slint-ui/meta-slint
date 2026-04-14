@@ -18,7 +18,7 @@ PV = "git-${SRCPV}"
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgl"
-DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH} ca-certificates-native curl-native"
+DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH} ca-certificates-native curl-native ninja-native"
 DEPENDS:append:class-target = " libdrm virtual/egl virtual/libgbm seatd udev libinput"
 DEPENDS:append:class-target = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'libxcb', '', d)} \
