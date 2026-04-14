@@ -27,6 +27,7 @@ DEPENDS:append:class-target = " \
 RDEPENDS:${PN}:class-target += "xkeyboard-config"
 
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
+CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=${CARGO_MANIFEST_PATH}"
 
 do_configure[network] = "1"
 do_compile[network] = "1"
