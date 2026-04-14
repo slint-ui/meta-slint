@@ -48,6 +48,6 @@ do_compile:append() {
     for p in slide_puzzle printerdemo gallery opengl_texture opengl_underlay energy-monitor home-automation; do
         cargo build ${CARGO_BUILD_FLAGS} -p $p
     done
-    rm -f "${CARGO_BINDIR}"/*.so
-    rm -f "${CARGO_BINDIR}"/*.rlib
+    rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.so
+    rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.rlib
 }
