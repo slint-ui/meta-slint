@@ -15,6 +15,7 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=a71019dc9c240d7add35e9d036870929"
 inherit cmake
 inherit pkgconfig
 inherit slint_common
+inherit features_check
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
