@@ -9,7 +9,6 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=9e911597e678943cde54111f7518e299"
 
 DEPENDS:append = " fontconfig"
 
-S = "${WORKDIR}/git"
 PV = "slint-hello-world-rust-${SRCPV}"
 
 do_compile[network] = "1"
