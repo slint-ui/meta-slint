@@ -30,7 +30,7 @@ jobs:
       - name: dependency setup
         run: |
           sudo apt-get update
-          sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3
+          sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3 python3-websockets
           sudo locale-gen en_US.UTF-8
           sudo update-locale
       - name: "user & machine setup"
@@ -42,9 +42,9 @@ jobs:
       - name: "ci setup"
         run: |
           su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci_setup.sh"
-      - name: "test scarthgap"
+      - name: "test master"
         run: |
-          su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci.sh scarthgap"
+          su - build -c "cd ${{ runner.workspace }}/meta-slint && meta-slint/scripts/ci.sh"
 
   delete-runner:
     name: Delete Runner
