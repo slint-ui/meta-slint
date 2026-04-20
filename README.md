@@ -7,7 +7,7 @@ For a Rust based application using Slint, use [meta-rust](https://github.com/met
 
 For a C++ based application, the recipes in this layer assume that your application is built using CMake and
 uses `find_package(Slint)` to locate Slint, and then uses `slint_target_sources` to compile `.slint` files to C++
-as well as links against `Slint::Slint`. For more details, check out our [C++ Getting Started](https://slint.dev/releases/1.2.2/docs/cpp/getting_started).
+as well as links against `Slint::Slint`. For more details, check out our [C++ Getting Started](https://docs.slint.dev/latest/docs/cpp/getting_started).
 When creating a Bitbake recipe for, use this layer, and in your application's recipe inherit from `cmake` and `slint`.
 
 ## Prerequisites
