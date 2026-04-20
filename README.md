@@ -3,7 +3,7 @@
 This layer contains recipes and classes for building Slint's C++ API, as well as the Rust based
 demos.
 
-For a Rust based application using Slint, use [meta-rust](https://github.com/meta-rust/meta-rust) directly,
+For a Rust based application using Slint, rely on OE-core's built-in Rust and `cargo` class support directly.
 
 For a C++ based application, the recipes in this layer assume that your application is built using CMake and
 uses `find_package(Slint)` to locate Slint, and then uses `slint_target_sources` to compile `.slint` files to C++
@@ -16,9 +16,11 @@ Meta-slint requires:
 
 ```
 meta-openembedded/meta-oe
-meta-rust-bin
 ```
-Check the [layer.conf](conf/layer.conf) LAYERSERIES_COMPAT_meta for yocto version compatibility
+
+The `dev` branch targets Yocto master (`wrynose`); the `main` branch tracks the previous stable
+release. Check the [layer.conf](conf/layer.conf) `LAYERSERIES_COMPAT_meta-slint` for yocto version
+compatibility.
 
 By default, yocto will pick the `_git` recipe of `slint-cpp`, which means the development version
 of Slint will be built. To select a specific Slint version, in your `conf/local.conf`, set
@@ -90,7 +92,6 @@ environment enables an additional `fus-image-slint-demos` image target.
 
 Steps:
   - Add [meta-clang](https://github.com/kraj/meta-clang)
-  - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
   - Add `meta-slint`
   - Edit your `conf/local.conf`:
     - Make sure `DISTRO` is set to `"fus-imx-wayland"`
@@ -103,7 +104,6 @@ adding this `meta-slint` layer to your environment enables an additional `core-i
 
 Steps:
   - Add [meta-clang](https://github.com/kraj/meta-clang)
-  - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
   - Add `meta-slint`
   - Run `bitbake core-image-slint-demos` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
 
@@ -114,7 +114,6 @@ adding this `meta-slint` layer to your enrivonment enables an additional `imx-im
 
 Steps:
   - Add [meta-clang](https://github.com/kraj/meta-clang)
-  - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
   - Add `meta-slint`
   - Run `bitbake imx-image-slint-demos` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
 
