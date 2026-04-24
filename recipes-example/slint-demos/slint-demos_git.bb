@@ -12,6 +12,7 @@ HOMEPAGE = "https://slint.dev/"
 LICENSE = "GPL-3.0-only | Slint-Commercial"
 
 inherit slint_common
+inherit features_check
 
 PV = "git-${SRCPV}"
 
@@ -62,3 +63,5 @@ do_compile:append() {
     rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.so
     rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.rlib
 }
+
+INSANE_SKIP:${PN} += "buildpaths"
