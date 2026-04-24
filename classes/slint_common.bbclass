@@ -28,3 +28,9 @@ export CLANGCXX="${TARGET_PREFIX}clang++ --target=${TARGET_SYS} ${TARGET_CLANGCC
 export CLANGCPP="${TARGET_PREFIX}clang -E --target=${TARGET_SYS} ${TARGET_CLANGCC_ARCH} --sysroot=${STAGING_DIR_TARGET}  -I=/usr/include/freetype2"
 export CLANG_TIDY_EXE="${TARGET_PREFIX}clang-tidy"
 export SDKTARGETSYSROOT="${PKG_CONFIG_SYSROOT_DIR}"
+
+# Forward proxy settings into task shells so Cargo build scripts can reach external hosts.
+export http_proxy
+export https_proxy
+export HTTP_PROXY
+export HTTPS_PROXY
