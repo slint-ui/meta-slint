@@ -41,6 +41,8 @@ BBCLASSEXTEND = "native"
 
 CARGO_FEATURES = "slint/backend-linuxkms slint/renderer-skia"
 
+SLINT_DEMOS = "slide_puzzle printerdemo gallery opengl_texture opengl_underlay energy-monitor home-automation"
+
 do_compile:prepend() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
@@ -54,7 +56,7 @@ do_compile:prepend() {
 do_compile:append() {
     # Reduce RAM requirements
     export CARGO_PROFILE_RELEASE_LTO=false
-    for p in slide_puzzle printerdemo gallery opengl_texture opengl_underlay energy-monitor home-automation; do
+    for p in ${SLINT_DEMOS}; do
         cargo build ${CARGO_BUILD_FLAGS} -p $p
     done
     rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.so
