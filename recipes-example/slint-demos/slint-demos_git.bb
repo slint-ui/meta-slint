@@ -29,13 +29,16 @@ RDEPENDS:${PN}:class-target += "xkeyboard-config"
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
 CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=${CARGO_MANIFEST_PATH}"
 
+# cargo.bbclass passes features only via PACKAGECONFIG_CONFARGS (empty here);
+# So append --features explicitly so machine-specific CARGO_FEATURES overrides take effect.
+CARGO_BUILD_FLAGS:append = " ${@'--features ' + ','.join(d.getVar('CARGO_FEATURES').split()) if d.getVar('CARGO_FEATURES') else ''}"
+
 do_configure[network] = "1"
 do_compile[network] = "1"
 
 
 BBCLASSEXTEND = "native"
 
-EXTRA_CARGO_FLAGS = "-p slint"
 CARGO_FEATURES = "slint/backend-linuxkms slint/renderer-skia"
 
 do_compile:prepend() {
