@@ -19,7 +19,7 @@ inherit slint_common
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append = " fontconfig"
-DEPENDS:append:class-target = " libxkbcommon virtual/libgl"
+DEPENDS:append:class-target = " libxkbcommon virtual/libgles2"
 RDEPENDS:${PN}:class-target += "xkeyboard-config"
 
 SLINT_REV ?= "master"
