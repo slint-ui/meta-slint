@@ -11,13 +11,13 @@ Upstream-Status: Inappropriate [embedded specific]
  1 file changed, 3 insertions(+)
 
 diff --git a/Cargo.toml b/Cargo.toml
-index 184bc4d080..145e5987f1 100644
+index b2f6bb07c9..fc1fb48941 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -200,6 +200,9 @@ windows-core = { version = "0.62.0" }
- lyon_path = { version = "1.0", default-features = false }
- objc2 = { version = "0.6.3" }
-
+@@ -212,6 +212,9 @@ objc2 = { version = "0.6.3" }
+ # Not updated because of https://github.com/gluon-lang/lsp-types/issues/284
+ lsp-types = "0.95.0"
+ 
 +[patch.crates-io]
 +gettext-sys = { git = "https://github.com/slint-ui/gettext-rs", branch = "simon/fix-linux-detection" }
 +
