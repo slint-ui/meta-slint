@@ -1,8 +1,8 @@
 #!/bin/bash
 set -ex
 
-git clone -b scarthgap git://git.yoctoproject.org/poky
-git clone -b scarthgap git://git.openembedded.org/meta-openembedded
+git clone -b scarthgap https://git.yoctoproject.org/poky
+git clone -b scarthgap https://git.openembedded.org/meta-openembedded
 git clone -b master https://github.com/rust-embedded/meta-rust-bin.git
 git clone -b scarthgap https://github.com/kraj/meta-clang.git
 
