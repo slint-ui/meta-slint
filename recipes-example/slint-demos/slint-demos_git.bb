@@ -3,7 +3,7 @@ inherit pkgconfig
 
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
 SRC_URI += "file://0001-WIP-v-1-14-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=093007ec281bbdeea447b0040b01a74d"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=1fa63388f53bdc8a49fc4eef67b55c87"
 
 SUMMARY = "Various Rust-based demos of Slint packaged up in /usr/bin"
 DESCRIPTION = "This recipe builds various Slint demos such as the energy monitor \
