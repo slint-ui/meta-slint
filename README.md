@@ -3,6 +3,8 @@
 This layer contains recipes and classes for building Slint's C++ API, as well as the Rust based
 demos.
 
+> **Note:** Support for wrynose and newer is located in the `dev` branch of this repository.
+
 For a Rust based application using Slint, use [meta-rust](https://github.com/meta-rust/meta-rust) directly,
 
 For a C++ based application, the recipes in this layer assume that your application is built using CMake and
