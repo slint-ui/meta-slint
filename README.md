@@ -3,6 +3,8 @@
 This layer contains recipes and classes for building Slint's C++ API, as well as the Rust based
 demos.
 
+**Note:** This branch supports wrynose and newer. Support for older versions is located in the `main` branch of this repository.
+
 For a Rust based application using Slint, rely on OE-core's built-in Rust and `cargo` class support directly.
 
 For a C++ based application, the recipes in this layer assume that your application is built using CMake and
