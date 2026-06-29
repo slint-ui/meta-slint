@@ -1,0 +1,15 @@
+name: Demo Images
+
+# Placeholder on the default branch. GitHub only exposes workflow_dispatch for
+# workflows that exist on the default branch, so this stub registers the
+# workflow path. The real workflow lives on the feature branch(es); dispatch
+# this workflow against that ref to build and upload the demo images.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Dispatch this workflow against a feature branch (e.g. simon/demo-images)."
