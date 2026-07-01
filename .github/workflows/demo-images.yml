@@ -37,6 +37,11 @@ jobs:
           # Shared-vCPU box (32G RAM / 320G disk) -- the type the CI workflow
           # already provisions reliably; rm_work keeps the BSP build within disk.
           server_type: cx53
+          # Persistent sstate cache lives on a Hetzner Volume; the server must be
+          # created in the volume's location (nbg1) for the attach to succeed. The
+          # action mounts it at /mnt/HC_Volume_<id>.
+          location: nbg1
+          volume: "106201634"
 
   build:
     runs-on: ${{ needs.prepare_env.outputs.label }}
@@ -81,10 +86,15 @@ jobs:
           useradd -m build
           echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
           chown -R build:build ${{ runner.workspace }}
+          # Persistent sstate cache on the attached Hetzner Volume (mounted by the
+          # runner action). Create the dir and hand it to the build user.
+          sudo mkdir -p /mnt/HC_Volume_106201634/sstate-cache
+          sudo chown build:build /mnt/HC_Volume_106201634/sstate-cache
       - name: "build ${{ matrix.device }} demo image"
         run: |
           su - build -c "cd ${{ runner.workspace }}/meta-slint && \
             ARTIFACT_DIR='${{ runner.workspace }}/meta-slint/artifacts' \
+            SSTATE_DIR='/mnt/HC_Volume_106201634/sstate-cache' \
             meta-slint/scripts/demo-images/${{ matrix.device }}.sh"
       - name: "publish ${{ matrix.device }} image to the demo-images release"
         env:
