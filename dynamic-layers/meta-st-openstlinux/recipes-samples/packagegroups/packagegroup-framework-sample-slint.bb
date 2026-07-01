@@ -8,4 +8,5 @@ CONFLICT_DISTRO_FEATURES = "x11 wayland"
 RDEPENDS:${PN} = "\
     liberation-fonts          \
     slint-demos               \
+    slint-viewer              \
     "
