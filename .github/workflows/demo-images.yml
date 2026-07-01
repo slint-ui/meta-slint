@@ -1,15 +1,118 @@
 name: Demo Images
 
-# Placeholder on the default branch. GitHub only exposes workflow_dispatch for
-# workflows that exist on the default branch, so this stub registers the
-# workflow path. The real workflow lives on the feature branch(es); dispatch
-# this workflow against that ref to build and upload the demo images.
+# Builds flashable Slint demo images for a selected set of devices and uploads
+# each into the rolling "demo-images" GitHub release, replacing the previous
+# asset in place. One script per device lives under scripts/demo-images/; add a
+# board by dropping in scripts/demo-images/<device>.sh and adding it to the
+# matrix below.
+#
+# The "demo-images" prerelease is expected to already exist; CI only clobbers
+# its assets (which needs the built-in GITHUB_TOKEN with contents: write).
+#
+# A full NXP i.MX vendor BSP build is heavy (CPU, RAM and disk), so the build
+# runs on a dedicated Hetzner Cloud instance spun up for the job, mirroring
+# the CI workflow.
+#
+# Required repository secrets:
+#   GH_API_KEY       - GitHub token for the Hetzner runner action
+#   HETZNER_API_KEY  - Hetzner Cloud API token
 
 on:
   workflow_dispatch:
 
 jobs:
-  placeholder:
+  prepare_env:
     runs-on: ubuntu-latest
+    name: Create new Hetzner Cloud instance for build
+    outputs:
+      label: ${{ steps.create-runner.outputs.label }}
+      server_id: ${{ steps.create-runner.outputs.server_id }}
     steps:
-      - run: echo "Dispatch this workflow against a feature branch (e.g. simon/demo-images)."
+      - uses: Cyclenerd/hcloud-github-runner@v1
+        id: create-runner
+        with:
+          mode: create
+          github_token: ${{ secrets.GH_API_KEY }}
+          hcloud_token: ${{ secrets.HETZNER_API_KEY }}
+          # Shared-vCPU box (32G RAM / 320G disk) -- the type the CI workflow
+          # already provisions reliably; rm_work keeps the BSP build within disk.
+          server_type: cx53
+
+  build:
+    runs-on: ${{ needs.prepare_env.outputs.label }}
+    needs: prepare_env
+    # Needed for `gh release upload` to write assets to the demo-images release.
+    permissions:
+      contents: write
+    # A from-scratch vendor BSP build (no sstate mirror) runs past GitHub's
+    # default 6h job limit; self-hosted runners honour a higher timeout-minutes.
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        device:
+          - imx95-evk
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            path: 'meta-slint'
+      - name: dependency setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3 git curl xz-utils zip
+          sudo locale-gen en_US.UTF-8
+          sudo update-locale
+          # GitHub CLI (not preinstalled on the ephemeral runner) to publish the
+          # image into the demo-images release.
+          sudo mkdir -p -m 755 /etc/apt/keyrings
+          wget -nv -O- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+          sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+            | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y gh
+      - name: "user & machine setup"
+        run: |
+          # OpenEmbedded's pseudo/bitbake rely on unprivileged user namespaces,
+          # which Ubuntu restricts by default on recent releases.
+          echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          useradd -m build
+          echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
+          chown -R build:build ${{ runner.workspace }}
+      - name: "build ${{ matrix.device }} demo image"
+        run: |
+          su - build -c "cd ${{ runner.workspace }}/meta-slint && \
+            ARTIFACT_DIR='${{ runner.workspace }}/meta-slint/artifacts' \
+            meta-slint/scripts/demo-images/${{ matrix.device }}.sh"
+      - name: "publish ${{ matrix.device }} image to the demo-images release"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd ${{ runner.workspace }}/meta-slint/artifacts
+          # Bundle the collected image files into a single, stably-named zip --
+          # the same "<device>-demo-image.zip" you'd get by downloading the
+          # workflow artifact from the browser. -0 (store) avoids re-compressing
+          # the already-compressed .wic.zst. The stable name means --clobber
+          # replaces the asset in place on each build (no accumulation).
+          zip -j -0 "${{ matrix.device }}-demo-image.zip" ./*
+          gh release upload demo-images --repo "${{ github.repository }}" --clobber \
+            "${{ matrix.device }}-demo-image.zip"
+
+  delete-runner:
+    name: Delete Runner
+    needs:
+      - prepare_env
+      - build
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Delete runner
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: delete
+          github_token: ${{ secrets.GH_API_KEY }}
+          hcloud_token: ${{ secrets.HETZNER_API_KEY }}
+          name: ${{ needs.prepare_env.outputs.label }}
+          server_id: ${{ needs.prepare_env.outputs.server_id }}
