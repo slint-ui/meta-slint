@@ -4,7 +4,7 @@ name: Demo Images
 # each into the rolling "demo-images" GitHub release, replacing the previous
 # asset in place. One script per device lives under scripts/demo-images/; add a
 # board by dropping in scripts/demo-images/<device>.sh and adding it to the
-# matrix below.
+# `device` choice input below. Each run builds the one device selected.
 #
 # The "demo-images" prerelease is expected to already exist; CI only clobbers
 # its assets (which needs the built-in GITHUB_TOKEN with contents: write).
@@ -19,6 +19,24 @@ name: Demo Images
 
 on:
   workflow_dispatch:
+    inputs:
+      device:
+        description: "Device to build the Slint demo image for"
+        type: choice
+        required: true
+        default: imx95-evk
+        options:
+          - imx95-evk
+          - rpi5
+          - rpi4
+
+# Only one demo-images build may run at a time: they share a single Hetzner
+# Volume for the sstate cache, and a Volume attaches to just one server. Queue
+# a new run behind the one in flight (cancel-in-progress: false) rather than
+# starting a doomed second build that can't get the volume.
+concurrency:
+  group: demo-images
+  cancel-in-progress: false
 
 jobs:
   prepare_env:
@@ -52,12 +70,6 @@ jobs:
     # A from-scratch vendor BSP build (no sstate mirror) runs past GitHub's
     # default 6h job limit; self-hosted runners honour a higher timeout-minutes.
     timeout-minutes: 600
-    strategy:
-      fail-fast: false
-      matrix:
-        device:
-          - imx95-evk
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -83,52 +95,112 @@ jobs:
           # OpenEmbedded's pseudo/bitbake rely on unprivileged user namespaces,
           # which Ubuntu restricts by default on recent releases.
           echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-          useradd -m build
+          # Idempotent, in case the runner is ever reused across jobs.
+          id -u build &>/dev/null || useradd -m build
           echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
           chown -R build:build ${{ runner.workspace }}
           # Persistent sstate cache on the attached Hetzner Volume. The runner
           # action attaches the volume as a raw block device but does NOT mount
           # it, so mount it ourselves -- otherwise the sstate dir would land on
-          # the ephemeral disk and every build would run cold. Format once, only
-          # if the volume has no filesystem yet (safe: it starts empty).
+          # the ephemeral disk and every build would run cold.
+          #
+          # A Hetzner Volume can only be attached to ONE server at a time, so if
+          # another demo-images build is already running it holds this volume and
+          # the attach/mount here fails. That MUST fail the job hard: we never
+          # fall back to an unmounted (ephemeral) sstate dir, which would run
+          # cold and, worse, could let two builds race the shared cache. Every
+          # branch below therefore exits non-zero rather than continuing.
           SSTATE_VOL=/dev/disk/by-id/scsi-0HC_Volume_106201634
           SSTATE_MNT=/mnt/HC_Volume_106201634
           if [ ! -b "$SSTATE_VOL" ]; then
-            echo "::error::sstate volume $SSTATE_VOL not attached"; lsblk; exit 1
+            echo "::error::sstate volume $SSTATE_VOL is not attached -- another build is likely holding it; failing."
+            lsblk; exit 1
           fi
+          # Format once, only if the volume has no filesystem yet (safe: it
+          # starts empty). Only mkfs when blkid clearly reports no filesystem.
           if ! sudo blkid "$SSTATE_VOL" >/dev/null 2>&1; then
             echo "Volume has no filesystem; creating ext4 (one-time)."
             sudo mkfs.ext4 -F -L sstate "$SSTATE_VOL"
           fi
           sudo mkdir -p "$SSTATE_MNT"
-          sudo mount "$SSTATE_VOL" "$SSTATE_MNT"
-          mountpoint -q "$SSTATE_MNT" || { echo "::error::failed to mount sstate volume"; lsblk; df -h; exit 1; }
+          # Idempotent: skip the mount if already mounted (reused runner).
+          if ! mountpoint -q "$SSTATE_MNT"; then
+            sudo mount "$SSTATE_VOL" "$SSTATE_MNT" || {
+              echo "::error::failed to mount sstate volume $SSTATE_VOL -- another build may be holding it; failing."
+              lsblk; df -h; exit 1
+            }
+          fi
+          # Belt and braces: refuse to proceed unless the mount really is backed
+          # by the sstate volume, so a build can never run against the ephemeral
+          # disk with a stale/empty cache.
+          if ! mountpoint -q "$SSTATE_MNT"; then
+            echo "::error::$SSTATE_MNT is not a mountpoint -- refusing to build without the sstate volume."
+            lsblk; df -h; exit 1
+          fi
+          mount_src=$(findmnt -no SOURCE --target "$SSTATE_MNT" || true)
+          if [ "$(readlink -f "$mount_src")" != "$(readlink -f "$SSTATE_VOL")" ]; then
+            echo "::error::$SSTATE_MNT is backed by '$mount_src', not the sstate volume $SSTATE_VOL; failing."
+            lsblk; df -h; exit 1
+          fi
           echo "sstate volume mounted:"; df -h "$SSTATE_MNT"
           # Create the sstate dir and hand it to the build user.
           sudo mkdir -p "$SSTATE_MNT/sstate-cache"
           sudo chown build:build "$SSTATE_MNT/sstate-cache"
-      - name: "build ${{ matrix.device }} demo image"
+      - name: "build ${{ inputs.device }} demo image"
         run: |
           SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
+          # Per-device build tree, so a reused runner never mixes one device's
+          # sources/ and build/ with another's.
+          WORK_ROOT=${{ runner.workspace }}/build-${{ inputs.device }}
           echo "sstate objects before build: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
           su - build -c "cd ${{ runner.workspace }}/meta-slint && \
-            ARTIFACT_DIR='${{ runner.workspace }}/meta-slint/artifacts' \
+            WORK_ROOT='${WORK_ROOT}' \
+            ARTIFACT_DIR='${WORK_ROOT}/artifacts' \
             SSTATE_DIR='${SSTATE_DIR}' \
-            meta-slint/scripts/demo-images/${{ matrix.device }}.sh"
+            meta-slint/scripts/demo-images/${{ inputs.device }}.sh"
           echo "sstate objects after build:  $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
-      - name: "publish ${{ matrix.device }} image to the demo-images release"
+      - name: "publish ${{ inputs.device }} image to the demo-images release"
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cd ${{ runner.workspace }}/meta-slint/artifacts
+          cd ${{ runner.workspace }}/build-${{ inputs.device }}/artifacts
           # Bundle the collected image files into a single, stably-named zip --
           # the same "<device>-demo-image.zip" you'd get by downloading the
           # workflow artifact from the browser. -0 (store) avoids re-compressing
           # the already-compressed .wic.zst. The stable name means --clobber
           # replaces the asset in place on each build (no accumulation).
-          zip -j -0 "${{ matrix.device }}-demo-image.zip" ./*
+          zip -j -0 "${{ inputs.device }}-demo-image.zip" ./*
           gh release upload demo-images --repo "${{ github.repository }}" --clobber \
-            "${{ matrix.device }}-demo-image.zip"
+            "${{ inputs.device }}-demo-image.zip"
+      - name: "prune stale sstate objects"
+        # Best-effort, and runs even if the build failed, to keep the shared
+        # Volume from growing unbounded. Never fail the job over pruning.
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          # Override to tune; objects not used by a build in this many days go.
+          SSTATE_MAX_AGE_DAYS: "30"
+        run: |
+          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
+          if ! mountpoint -q /mnt/HC_Volume_106201634; then
+            echo "sstate volume not mounted; nothing to prune"; exit 0
+          fi
+          before=$(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)
+          # Prune by access time: bitbake reads an object (and its .siginfo)
+          # when it restores it, so -atime tracks "least recently used". This
+          # relies on the volume being mounted with atime updates (ext4's
+          # default relatime -- do NOT mount it noatime, or LRU info is lost).
+          sudo find "$SSTATE_DIR" -type f -name '*.tar.zst'         -atime +"$SSTATE_MAX_AGE_DAYS" -delete
+          sudo find "$SSTATE_DIR" -type f -name '*.tar.zst.siginfo' -atime +"$SSTATE_MAX_AGE_DAYS" -delete
+          # Never keep Slint's own sstate: the slint-cpp/slint-demos recipes
+          # track master, so their objects are per-build churn and -- worse -- a
+          # matching hash could restore a stale (non-latest) build. Dropping them
+          # every run forces each image to rebuild Slint from current master.
+          # The glob matches both the .tar.zst objects and their .siginfo files.
+          sudo find "$SSTATE_DIR" -type f -name 'sstate:slint*' -delete
+          sudo find "$SSTATE_DIR" -mindepth 1 -type d -empty -delete 2>/dev/null || true
+          after=$(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)
+          echo "sstate objects: $before -> $after (dropped Slint + anything unused > ${SSTATE_MAX_AGE_DAYS} days)"
 
   delete-runner:
     name: Delete Runner
