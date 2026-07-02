@@ -15,6 +15,8 @@
 #   IMAGE                default imx-image-slint-demos
 #   WORK_ROOT            default $PWD (build tree is created here)
 #   ARTIFACT_DIR         default $WORK_ROOT/artifacts (flashable image copied here)
+#   SSTATE_DIR           unset (bitbake default); set to a persistent path to
+#                        reuse an sstate cache across builds
 set -euo pipefail
 
 IMX_MANIFEST_BRANCH="${IMX_MANIFEST_BRANCH:-imx-linux-scarthgap}"
@@ -84,6 +86,13 @@ slint_demo_add_layer_if_missing "$META_SLINT_DIR"
 
 # --- Slint / disk-conservation configuration. ---
 slint_demo_configure_local_conf conf/local.conf
+
+# Point sstate at a persistent cache (e.g. a mounted Hetzner Volume) when the
+# workflow provides one; DL_DIR is deliberately left at its default so downloads
+# stay ephemeral. A warm sstate restores most recipes without re-fetching.
+if [ -n "${SSTATE_DIR:-}" ]; then
+    echo "SSTATE_DIR = \"$SSTATE_DIR\"" >> conf/local.conf
+fi
 
 # --- Build. ---
 bitbake "$IMAGE"

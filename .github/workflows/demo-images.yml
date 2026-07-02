@@ -37,6 +37,11 @@ jobs:
           # Shared-vCPU box (32G RAM / 320G disk) -- the type the CI workflow
           # already provisions reliably; rm_work keeps the BSP build within disk.
           server_type: cx53
+          # Persistent sstate cache lives on a Hetzner Volume; the server must be
+          # created in the volume's location (nbg1) for the attach to succeed. The
+          # action mounts it at /mnt/HC_Volume_<id>.
+          location: nbg1
+          volume: "106201634"
 
   build:
     runs-on: ${{ needs.prepare_env.outputs.label }}
@@ -81,11 +86,36 @@ jobs:
           useradd -m build
           echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
           chown -R build:build ${{ runner.workspace }}
+          # Persistent sstate cache on the attached Hetzner Volume. The runner
+          # action attaches the volume as a raw block device but does NOT mount
+          # it, so mount it ourselves -- otherwise the sstate dir would land on
+          # the ephemeral disk and every build would run cold. Format once, only
+          # if the volume has no filesystem yet (safe: it starts empty).
+          SSTATE_VOL=/dev/disk/by-id/scsi-0HC_Volume_106201634
+          SSTATE_MNT=/mnt/HC_Volume_106201634
+          if [ ! -b "$SSTATE_VOL" ]; then
+            echo "::error::sstate volume $SSTATE_VOL not attached"; lsblk; exit 1
+          fi
+          if ! sudo blkid "$SSTATE_VOL" >/dev/null 2>&1; then
+            echo "Volume has no filesystem; creating ext4 (one-time)."
+            sudo mkfs.ext4 -F -L sstate "$SSTATE_VOL"
+          fi
+          sudo mkdir -p "$SSTATE_MNT"
+          sudo mount "$SSTATE_VOL" "$SSTATE_MNT"
+          mountpoint -q "$SSTATE_MNT" || { echo "::error::failed to mount sstate volume"; lsblk; df -h; exit 1; }
+          echo "sstate volume mounted:"; df -h "$SSTATE_MNT"
+          # Create the sstate dir and hand it to the build user.
+          sudo mkdir -p "$SSTATE_MNT/sstate-cache"
+          sudo chown build:build "$SSTATE_MNT/sstate-cache"
       - name: "build ${{ matrix.device }} demo image"
         run: |
+          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
+          echo "sstate objects before build: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
           su - build -c "cd ${{ runner.workspace }}/meta-slint && \
             ARTIFACT_DIR='${{ runner.workspace }}/meta-slint/artifacts' \
+            SSTATE_DIR='${SSTATE_DIR}' \
             meta-slint/scripts/demo-images/${{ matrix.device }}.sh"
+          echo "sstate objects after build:  $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
       - name: "publish ${{ matrix.device }} image to the demo-images release"
         env:
           GH_TOKEN: ${{ github.token }}
