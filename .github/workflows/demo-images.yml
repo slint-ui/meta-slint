@@ -46,6 +46,27 @@ jobs:
       label: ${{ steps.create-runner.outputs.label }}
       server_id: ${{ steps.create-runner.outputs.server_id }}
     steps:
+      - name: "wait for the sstate volume to detach from the previous build"
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HETZNER_API_KEY }}
+        run: |
+          # The concurrency group serializes runs, but a Hetzner server's
+          # deletion -- and therefore the detach of its attached volume --
+          # completes asynchronously, after the previous run's delete-runner job
+          # has already returned. If we create this run's server too soon, the
+          # create action fails to attach the shared sstate volume because the
+          # old server still holds it. Poll the volume until it is free.
+          vol=106201634
+          for i in $(seq 1 60); do
+            server=$(curl -fsSL -H "Authorization: Bearer $HCLOUD_TOKEN" \
+              "https://api.hetzner.cloud/v1/volumes/$vol" | jq -r '.volume.server // "null"')
+            if [ "$server" = "null" ]; then
+              echo "sstate volume $vol is free after $((i - 1)) poll(s)"; exit 0
+            fi
+            echo "sstate volume $vol still attached to server $server; waiting ($i/60)..."
+            sleep 10
+          done
+          echo "::error::timed out waiting for sstate volume $vol to detach"; exit 1
       - uses: Cyclenerd/hcloud-github-runner@v1
         id: create-runner
         with:
@@ -156,6 +177,7 @@ jobs:
           su - build -c "cd ${{ runner.workspace }}/meta-slint && \
             WORK_ROOT='${WORK_ROOT}' \
             ARTIFACT_DIR='${WORK_ROOT}/artifacts' \
+            ARTIFACT_BASENAME='${{ inputs.device }}-slint-demo' \
             SSTATE_DIR='${SSTATE_DIR}' \
             meta-slint/scripts/demo-images/${{ inputs.device }}.sh"
           echo "sstate objects after build:  $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
@@ -164,14 +186,30 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd ${{ runner.workspace }}/build-${{ inputs.device }}/artifacts
-          # Bundle the collected image files into a single, stably-named zip --
-          # the same "<device>-demo-image.zip" you'd get by downloading the
-          # workflow artifact from the browser. -0 (store) avoids re-compressing
-          # the already-compressed .wic.zst. The stable name means --clobber
-          # replaces the asset in place on each build (no accumulation).
-          zip -j -0 "${{ inputs.device }}-demo-image.zip" ./*
-          gh release upload demo-images --repo "${{ github.repository }}" --clobber \
-            "${{ inputs.device }}-demo-image.zip"
+          if [ "${{ inputs.device }}" = "imx95-evk" ]; then
+            # The i.MX image is flashed with uuu/bmaptool rather than
+            # balenaEtcher, so bundle the .wic.zst + .bmap into a single,
+            # stably-named zip. -0 (store) avoids re-compressing the already
+            # compressed .wic.zst; the stable name lets --clobber replace the
+            # asset in place on each build (no accumulation).
+            zip -j -0 "${{ inputs.device }}-demo-image.zip" ./*
+            gh release upload demo-images --repo "${{ github.repository }}" --clobber \
+              "${{ inputs.device }}-demo-image.zip"
+          else
+            # The Raspberry Pi image is an uncompressed raw .img. Bundle it into
+            # <device>-slint-demo.zip: balenaEtcher opens the zip and flashes the
+            # single .img inside, and deflate shrinks the mostly-empty raw image
+            # so the download stays reasonable. Stable name -> --clobber replaces
+            # the previous build's asset in place.
+            shopt -s nullglob
+            files=(*)
+            if [ "${#files[@]}" -eq 0 ]; then
+              echo "::error::no artifacts found to publish"; exit 1
+            fi
+            zip -j "${{ inputs.device }}-slint-demo.zip" "${files[@]}"
+            gh release upload demo-images --repo "${{ github.repository }}" --clobber \
+              "${{ inputs.device }}-slint-demo.zip"
+          fi
       - name: "prune stale sstate objects"
         # Best-effort, and runs even if the build failed, to keep the shared
         # Volume from growing unbounded. Never fail the job over pruning.
