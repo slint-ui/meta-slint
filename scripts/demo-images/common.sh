@@ -95,20 +95,40 @@ EOF
 }
 
 # Copy the given files into $ARTIFACT_DIR so a later workflow step can publish
-# them as a GitHub Actions artifact. Missing globs are skipped with a warning;
-# erroring if nothing was collected. Requires:
-#   ARTIFACT_DIR - directory to copy the flashable artifacts into
+# them to the demo-images release. Missing globs are skipped with a warning;
+# erroring if nothing was collected. Optionally:
+#   ARTIFACT_DIR        - directory to copy the flashable artifacts into (required)
+#   ARTIFACT_BASENAME   - if set, each file is renamed to
+#                         "<ARTIFACT_BASENAME>.<label>.<xz|zst|bmap|...>".
+#                         OpenEmbedded stamps its deploy files with a build date,
+#                         so a stable name is what lets `gh release upload
+#                         --clobber` replace the previous asset in place instead
+#                         of piling up date-stamped files on the release.
+#   ARTIFACT_IMAGE_LABEL - the extension label to give the raw image (default
+#                         "wic"). A .wic is a plain raw disk image, so the Pi
+#                         builds relabel it to "img" -- the extension flashing
+#                         tools (balenaEtcher, Raspberry Pi Imager) expect.
 slint_demo_collect_artifacts() {
     local dest="${ARTIFACT_DIR:?ARTIFACT_DIR must be set}"
+    local label="${ARTIFACT_IMAGE_LABEL:-wic}"
     mkdir -p "$dest"
-    local f collected=0
+    local f base target collected=0
     for f in "$@"; do
         if [ ! -e "$f" ]; then
             echo "warning: no artifact matched '$f', skipping" >&2
             continue
         fi
-        echo "Collecting $(basename "$f") -> $dest"
-        cp -L "$f" "$dest/"
+        base="$(basename "$f")"
+        if [ -n "${ARTIFACT_BASENAME:-}" ]; then
+            # Keep the compression/type suffix (everything after the first
+            # ".wic") but swap the "wic" label, e.g. foo.rootfs.wic.xz ->
+            # <basename>.img.xz, foo.rootfs.wic.bmap -> <basename>.img.bmap.
+            target="$dest/${ARTIFACT_BASENAME}.${label}${base#*.wic}"
+        else
+            target="$dest/$base"
+        fi
+        echo "Collecting $base -> $target"
+        cp -L "$f" "$target"
         collected=$((collected + 1))
     done
     if [ "$collected" -eq 0 ]; then

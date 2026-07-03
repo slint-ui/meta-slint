@@ -80,6 +80,10 @@ slint_demo_build_rpi() {
     # base image, carries the "synaptics-killswitch" license flag; accept it so the
     # firmware is buildable instead of skipped.
     echo 'LICENSE_FLAGS_ACCEPTED:append = " synaptics-killswitch"' >> conf/local.conf
+    # poky defaults to sysvinit, but the slint-demos autostart is a systemd unit
+    # and the image relies on systemd-networkd for DHCP -- switch the init
+    # manager to systemd so both actually run on boot.
+    echo 'INIT_MANAGER = "systemd"' >> conf/local.conf
     slint_demo_configure_local_conf conf/local.conf
 
     # Point sstate at a persistent cache (e.g. a mounted Hetzner Volume) when the
@@ -93,14 +97,17 @@ slint_demo_build_rpi() {
     bitbake "$image"
 
     # --- Collect the flashable image for the workflow to publish. ---
-    # Ship the compressed image plus its block map; bmaptool can flash the
-    # .wic.zst directly using the .bmap. Match by extension (OpenEmbedded adds a
-    # ".rootfs" infix), and restrict to regular files so OE's convenience
-    # symlinks don't duplicate the (large) image in the artifact.
+    # Ship the uncompressed raw image, relabelled from .wic to .img (a .wic is
+    # just a raw disk image). The workflow bundles it into <device>-slint-demo.zip
+    # so balenaEtcher can open the zip and flash the single .img to an SD card.
+    # Match by extension (OpenEmbedded adds a ".rootfs" infix), and restrict to
+    # regular files so OE's convenience symlink doesn't duplicate the (large)
+    # image in the artifact.
+    export ARTIFACT_IMAGE_LABEL=img
     local deploy="tmp/deploy/images/$machine"
     local -a slint_demo_images
     mapfile -t slint_demo_images < <(
-        find "$deploy" -maxdepth 1 -type f \( -name '*.wic.zst' -o -name '*.wic.bmap' \) | sort
+        find "$deploy" -maxdepth 1 -type f -name '*.wic' | sort
     )
     slint_demo_collect_artifacts "${slint_demo_images[@]}"
 }
