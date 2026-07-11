@@ -1,258 +1,82 @@
 name: Demo Images
 
-# Builds flashable Slint demo images for a selected set of devices and uploads
-# each into the rolling "demo-images" GitHub release, replacing the previous
-# asset in place. One script per device lives under scripts/demo-images/; add a
-# board by dropping in scripts/demo-images/<device>.sh and adding it to the
-# `device` choice input below. Each run builds the one device selected.
+# Build the checked boards as flashable Slint demo images (via the reusable
+# build-one-device.yml), one at a time -- they share a single Hetzner Volume for
+# the sstate cache, which attaches to only one server at a time.
 #
-# The "demo-images" prerelease is expected to already exist; CI only clobbers
-# its assets (which needs the built-in GITHUB_TOKEN with contents: write).
-#
-# A full NXP i.MX vendor BSP build is heavy (CPU, RAM and disk), so the build
-# runs on a dedicated Hetzner Cloud instance spun up for the job, mirroring
-# the CI workflow.
-#
-# Required repository secrets:
-#   GH_API_KEY       - GitHub token for the Hetzner runner action
-#   HETZNER_API_KEY  - Hetzner Cloud API token
+# Add a board: drop scripts/demo-images/<device>.sh, add a boolean input, add a
+# "select" line. Secrets: GH_API_KEY (Hetzner runner action), HETZNER_API_KEY.
 
 on:
   workflow_dispatch:
     inputs:
-      device:
-        description: "Device to build the Slint demo image for"
-        type: choice
-        required: true
-        default: imx95-evk
-        options:
-          - imx95-evk
-          - rpi5
-          - rpi4
+      imx95-evk:
+        description: "Build the i.MX95 EVK image"
+        type: boolean
+        default: false
+      rpi4:
+        description: "Build the Raspberry Pi 4 image"
+        type: boolean
+        default: false
+      rpi5:
+        description: "Build the Raspberry Pi 5 image"
+        type: boolean
+        default: false
+      stm32mp1:
+        description: "Build the STM32MP1 image (STM32MP15: DK1/DK2/EV1)"
+        type: boolean
+        default: false
+      stm32mp2:
+        description: "Build the STM32MP2 image (STM32MP25: e.g. STM32MP257F-DK)"
+        type: boolean
+        default: false
+      publish_to_release:
+        description: "Upload the built image(s) to the demo-images release (untick to keep them as workflow artifacts only)"
+        type: boolean
+        default: true
 
-# Only one demo-images build may run at a time: they share a single Hetzner
-# Volume for the sstate cache, and a Volume attaches to just one server. Queue
-# a new run behind the one in flight (cancel-in-progress: false) rather than
-# starting a doomed second build that can't get the volume.
+# Only one demo-images run at a time (shared Hetzner Volume); queue a new run
+# behind the one in flight rather than dropping it.
 concurrency:
   group: demo-images
   cancel-in-progress: false
 
 jobs:
-  prepare_env:
+  select:
     runs-on: ubuntu-latest
-    name: Create new Hetzner Cloud instance for build
+    name: Select boards
     outputs:
-      label: ${{ steps.create-runner.outputs.label }}
-      server_id: ${{ steps.create-runner.outputs.server_id }}
+      devices: ${{ steps.select.outputs.devices }}
     steps:
-      - name: "wait for the sstate volume to detach from the previous build"
-        env:
-          HCLOUD_TOKEN: ${{ secrets.HETZNER_API_KEY }}
+      - id: select
         run: |
-          # The concurrency group serializes runs, but a Hetzner server's
-          # deletion -- and therefore the detach of its attached volume --
-          # completes asynchronously, after the previous run's delete-runner job
-          # has already returned. If we create this run's server too soon, the
-          # create action fails to attach the shared sstate volume because the
-          # old server still holds it. Poll the volume until it is free.
-          vol=106201634
-          for i in $(seq 1 60); do
-            server=$(curl -fsSL -H "Authorization: Bearer $HCLOUD_TOKEN" \
-              "https://api.hetzner.cloud/v1/volumes/$vol" | jq -r '.volume.server // "null"')
-            if [ "$server" = "null" ]; then
-              echo "sstate volume $vol is free after $((i - 1)) poll(s)"; exit 0
-            fi
-            echo "sstate volume $vol still attached to server $server; waiting ($i/60)..."
-            sleep 10
-          done
-          echo "::error::timed out waiting for sstate volume $vol to detach"; exit 1
-      - uses: Cyclenerd/hcloud-github-runner@v1
-        id: create-runner
-        with:
-          mode: create
-          github_token: ${{ secrets.GH_API_KEY }}
-          hcloud_token: ${{ secrets.HETZNER_API_KEY }}
-          # Shared-vCPU box (32G RAM / 320G disk) -- the type the CI workflow
-          # already provisions reliably; rm_work keeps the BSP build within disk.
-          server_type: cx53
-          # Persistent sstate cache lives on a Hetzner Volume; the server must be
-          # created in the volume's location (nbg1) for the attach to succeed. The
-          # action mounts it at /mnt/HC_Volume_<id>.
-          location: nbg1
-          volume: "106201634"
+          # Checked boards -> JSON array for the build matrix. `[ test ] && cmd`
+          # is safe under set -e (a false test short-circuits without aborting).
+          devices=()
+          [ "${{ inputs['imx95-evk'] }}" = "true" ] && devices+=('"imx95-evk"')
+          [ "${{ inputs.rpi4 }}" = "true" ]              && devices+=('"rpi4"')
+          [ "${{ inputs.rpi5 }}" = "true" ]      && devices+=('"rpi5"')
+          [ "${{ inputs.stm32mp1 }}" = "true" ]  && devices+=('"stm32mp1"')
+          [ "${{ inputs.stm32mp2 }}" = "true" ]  && devices+=('"stm32mp2"')
+          if [ "${#devices[@]}" -eq 0 ]; then
+            echo "::error::Select at least one board to build."; exit 1
+          fi
+          IFS=,
+          echo "devices=[${devices[*]}]" >> "$GITHUB_OUTPUT"
+          echo "Building: [${devices[*]}]"
 
   build:
-    runs-on: ${{ needs.prepare_env.outputs.label }}
-    needs: prepare_env
-    # Needed for `gh release upload` to write assets to the demo-images release.
+    needs: select
+    # Write access for the release upload (the called workflow can't request more).
     permissions:
       contents: write
-    # A from-scratch vendor BSP build (no sstate mirror) runs past GitHub's
-    # default 6h job limit; self-hosted runners honour a higher timeout-minutes.
-    timeout-minutes: 600
-    steps:
-      - uses: actions/checkout@v4
-        with:
-            path: 'meta-slint'
-      - name: dependency setup
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3 git curl xz-utils zip
-          sudo locale-gen en_US.UTF-8
-          sudo update-locale
-          # GitHub CLI (not preinstalled on the ephemeral runner) to publish the
-          # image into the demo-images release.
-          sudo mkdir -p -m 755 /etc/apt/keyrings
-          wget -nv -O- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-            | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
-          sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-            | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
-          sudo apt-get update
-          sudo apt-get install -y gh
-      - name: "user & machine setup"
-        run: |
-          # OpenEmbedded's pseudo/bitbake rely on unprivileged user namespaces,
-          # which Ubuntu restricts by default on recent releases.
-          echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-          # Idempotent, in case the runner is ever reused across jobs.
-          id -u build &>/dev/null || useradd -m build
-          echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
-          chown -R build:build ${{ runner.workspace }}
-          # Persistent sstate cache on the attached Hetzner Volume. The runner
-          # action attaches the volume as a raw block device but does NOT mount
-          # it, so mount it ourselves -- otherwise the sstate dir would land on
-          # the ephemeral disk and every build would run cold.
-          #
-          # A Hetzner Volume can only be attached to ONE server at a time, so if
-          # another demo-images build is already running it holds this volume and
-          # the attach/mount here fails. That MUST fail the job hard: we never
-          # fall back to an unmounted (ephemeral) sstate dir, which would run
-          # cold and, worse, could let two builds race the shared cache. Every
-          # branch below therefore exits non-zero rather than continuing.
-          SSTATE_VOL=/dev/disk/by-id/scsi-0HC_Volume_106201634
-          SSTATE_MNT=/mnt/HC_Volume_106201634
-          if [ ! -b "$SSTATE_VOL" ]; then
-            echo "::error::sstate volume $SSTATE_VOL is not attached -- another build is likely holding it; failing."
-            lsblk; exit 1
-          fi
-          # Format once, only if the volume has no filesystem yet (safe: it
-          # starts empty). Only mkfs when blkid clearly reports no filesystem.
-          if ! sudo blkid "$SSTATE_VOL" >/dev/null 2>&1; then
-            echo "Volume has no filesystem; creating ext4 (one-time)."
-            sudo mkfs.ext4 -F -L sstate "$SSTATE_VOL"
-          fi
-          sudo mkdir -p "$SSTATE_MNT"
-          # Idempotent: skip the mount if already mounted (reused runner).
-          if ! mountpoint -q "$SSTATE_MNT"; then
-            sudo mount "$SSTATE_VOL" "$SSTATE_MNT" || {
-              echo "::error::failed to mount sstate volume $SSTATE_VOL -- another build may be holding it; failing."
-              lsblk; df -h; exit 1
-            }
-          fi
-          # Belt and braces: refuse to proceed unless the mount really is backed
-          # by the sstate volume, so a build can never run against the ephemeral
-          # disk with a stale/empty cache.
-          if ! mountpoint -q "$SSTATE_MNT"; then
-            echo "::error::$SSTATE_MNT is not a mountpoint -- refusing to build without the sstate volume."
-            lsblk; df -h; exit 1
-          fi
-          mount_src=$(findmnt -no SOURCE --target "$SSTATE_MNT" || true)
-          if [ "$(readlink -f "$mount_src")" != "$(readlink -f "$SSTATE_VOL")" ]; then
-            echo "::error::$SSTATE_MNT is backed by '$mount_src', not the sstate volume $SSTATE_VOL; failing."
-            lsblk; df -h; exit 1
-          fi
-          echo "sstate volume mounted:"; df -h "$SSTATE_MNT"
-          # Create the sstate dir and hand it to the build user.
-          sudo mkdir -p "$SSTATE_MNT/sstate-cache"
-          sudo chown build:build "$SSTATE_MNT/sstate-cache"
-      - name: "build ${{ inputs.device }} demo image"
-        run: |
-          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
-          # Per-device build tree, so a reused runner never mixes one device's
-          # sources/ and build/ with another's.
-          WORK_ROOT=${{ runner.workspace }}/build-${{ inputs.device }}
-          echo "sstate objects before build: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
-          su - build -c "cd ${{ runner.workspace }}/meta-slint && \
-            WORK_ROOT='${WORK_ROOT}' \
-            ARTIFACT_DIR='${WORK_ROOT}/artifacts' \
-            ARTIFACT_BASENAME='${{ inputs.device }}-slint-demo' \
-            SSTATE_DIR='${SSTATE_DIR}' \
-            meta-slint/scripts/demo-images/${{ inputs.device }}.sh"
-          echo "sstate objects after build:  $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
-      - name: "publish ${{ inputs.device }} image to the demo-images release"
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          cd ${{ runner.workspace }}/build-${{ inputs.device }}/artifacts
-          if [ "${{ inputs.device }}" = "imx95-evk" ]; then
-            # The i.MX image is flashed with uuu/bmaptool rather than
-            # balenaEtcher, so bundle the .wic.zst + .bmap into a single,
-            # stably-named zip. -0 (store) avoids re-compressing the already
-            # compressed .wic.zst; the stable name lets --clobber replace the
-            # asset in place on each build (no accumulation).
-            zip -j -0 "${{ inputs.device }}-demo-image.zip" ./*
-            gh release upload demo-images --repo "${{ github.repository }}" --clobber \
-              "${{ inputs.device }}-demo-image.zip"
-          else
-            # The Raspberry Pi image is an uncompressed raw .img. Bundle it into
-            # <device>-slint-demo.zip: balenaEtcher opens the zip and flashes the
-            # single .img inside, and deflate shrinks the mostly-empty raw image
-            # so the download stays reasonable. Stable name -> --clobber replaces
-            # the previous build's asset in place.
-            shopt -s nullglob
-            files=(*)
-            if [ "${#files[@]}" -eq 0 ]; then
-              echo "::error::no artifacts found to publish"; exit 1
-            fi
-            zip -j "${{ inputs.device }}-slint-demo.zip" "${files[@]}"
-            gh release upload demo-images --repo "${{ github.repository }}" --clobber \
-              "${{ inputs.device }}-slint-demo.zip"
-          fi
-      - name: "prune stale sstate objects"
-        # Best-effort, and runs even if the build failed, to keep the shared
-        # Volume from growing unbounded. Never fail the job over pruning.
-        if: ${{ always() }}
-        continue-on-error: true
-        env:
-          # Override to tune; objects not used by a build in this many days go.
-          SSTATE_MAX_AGE_DAYS: "30"
-        run: |
-          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
-          if ! mountpoint -q /mnt/HC_Volume_106201634; then
-            echo "sstate volume not mounted; nothing to prune"; exit 0
-          fi
-          before=$(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)
-          # Prune by access time: bitbake reads an object (and its .siginfo)
-          # when it restores it, so -atime tracks "least recently used". This
-          # relies on the volume being mounted with atime updates (ext4's
-          # default relatime -- do NOT mount it noatime, or LRU info is lost).
-          sudo find "$SSTATE_DIR" -type f -name '*.tar.zst'         -atime +"$SSTATE_MAX_AGE_DAYS" -delete
-          sudo find "$SSTATE_DIR" -type f -name '*.tar.zst.siginfo' -atime +"$SSTATE_MAX_AGE_DAYS" -delete
-          # Never keep Slint's own sstate: the slint-cpp/slint-demos recipes
-          # track master, so their objects are per-build churn and -- worse -- a
-          # matching hash could restore a stale (non-latest) build. Dropping them
-          # every run forces each image to rebuild Slint from current master.
-          # The glob matches both the .tar.zst objects and their .siginfo files.
-          sudo find "$SSTATE_DIR" -type f -name 'sstate:slint*' -delete
-          sudo find "$SSTATE_DIR" -mindepth 1 -type d -empty -delete 2>/dev/null || true
-          after=$(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)
-          echo "sstate objects: $before -> $after (dropped Slint + anything unused > ${SSTATE_MAX_AGE_DAYS} days)"
-
-  delete-runner:
-    name: Delete Runner
-    needs:
-      - prepare_env
-      - build
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    steps:
-      - name: Delete runner
-        uses: Cyclenerd/hcloud-github-runner@v1
-        with:
-          mode: delete
-          github_token: ${{ secrets.GH_API_KEY }}
-          hcloud_token: ${{ secrets.HETZNER_API_KEY }}
-          name: ${{ needs.prepare_env.outputs.label }}
-          server_id: ${{ needs.prepare_env.outputs.server_id }}
+    strategy:
+      fail-fast: false      # one board failing shouldn't cancel the others
+      max-parallel: 1       # serialize: they share one Hetzner sstate Volume
+      matrix:
+        device: ${{ fromJson(needs.select.outputs.devices) }}
+    uses: ./.github/workflows/build-one-device.yml
+    with:
+      device: ${{ matrix.device }}
+      publish_to_release: ${{ inputs.publish_to_release }}
+    secrets: inherit

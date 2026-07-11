@@ -1,5 +1,9 @@
 TARGET_CFLAGS:remove = "-fcanon-prefix-map"
 
+# The Skia renderer builds Skia from source with GN + ninja (skia-bindings), and
+# not every BSP provides ninja-native (OpenSTLinux doesn't), so depend on it.
+DEPENDS:append:class-target = " ninja-native"
+
 do_compile:prepend() {
     #export RUSTFLAGS="${RUSTFLAGS}"
     #export RUST_TARGET_PATH="${RUST_TARGET_PATH}"

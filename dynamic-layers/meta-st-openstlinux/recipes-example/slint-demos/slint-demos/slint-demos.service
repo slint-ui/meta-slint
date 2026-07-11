@@ -2,8 +2,10 @@
 Description=Startup script to launch Slint demo(s) on startup
 
 [Service]
-ExecStart=/usr/bin/energy-monitor
-Environment="SLINT_KMS_ROTATION=270"
+# The demo binary and screen rotation are substituted at do_install time from
+# the bbappend's SLINT_DEMO_BINARY / SLINT_KMS_ROTATION (per-MACHINE overrides).
+ExecStart=/usr/bin/@SLINT_DEMO_BINARY@
+Environment="SLINT_KMS_ROTATION=@SLINT_KMS_ROTATION@"
 
 [Install]
 WantedBy=multi-user.target
