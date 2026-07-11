@@ -30,6 +30,14 @@ on:
         description: "Build the STM32MP2 image (STM32MP25: e.g. STM32MP257F-DK)"
         type: boolean
         default: false
+      am62px:
+        description: "Build the TI AM62Px image (SK-AM62P-LP)"
+        type: boolean
+        default: false
+      am62l:
+        description: "Build the TI AM62L image (TMDS62LEVM, GPU-less / software rendering)"
+        type: boolean
+        default: false
       publish_to_release:
         description: "Upload the built image(s) to the demo-images release (untick to keep them as workflow artifacts only)"
         type: boolean
@@ -62,6 +70,8 @@ jobs:
           [ "${{ inputs.rpi5 }}" = "true" ]      && devices+=('"rpi5"')
           [ "${{ inputs.stm32mp1 }}" = "true" ]  && devices+=('"stm32mp1"')
           [ "${{ inputs.stm32mp2 }}" = "true" ]  && devices+=('"stm32mp2"')
+          [ "${{ inputs.am62px }}" = "true" ]    && devices+=('"am62px"')
+          [ "${{ inputs.am62l }}" = "true" ]     && devices+=('"am62l"')
           if [ "${#devices[@]}" -eq 0 ]; then
             echo "::error::Select at least one board to build."; exit 1
           fi
