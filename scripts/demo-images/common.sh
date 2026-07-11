@@ -58,9 +58,9 @@ BB_DISKMON_DIRS = "\
     STOPTASKS,${TMPDIR},2G,100K \
     STOPTASKS,${DL_DIR},2G,100K \
     STOPTASKS,${SSTATE_DIR},2G,100K \
-    ABORT,${TMPDIR},512M,1K \
-    ABORT,${DL_DIR},512M,1K \
-    ABORT,${SSTATE_DIR},512M,1K"
+    HALT,${TMPDIR},512M,1K \
+    HALT,${DL_DIR},512M,1K \
+    HALT,${SSTATE_DIR},512M,1K"
 
 # Resource caps for the Hetzner box (32G RAM). BB_NUMBER_THREADS is the OOM lever
 # (parallel recipes), so keep it low; PARALLEL_MAKE speeds up the clang-native
