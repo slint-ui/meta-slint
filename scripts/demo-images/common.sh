@@ -46,6 +46,9 @@ CLANGSDK = "1"
 # KMS/DRM framebuffer + Skia renderer, plus the system-testing harness.
 PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-testing"
 
+# The demo images don't ship an SBOM; skip SPDX generation.
+INHERIT:remove = "create-spdx"
+
 # --- Disk-space conservation ---
 
 # Delete each recipe's WORKDIR once built (biggest disk saver; deploy is kept).
@@ -63,10 +66,13 @@ BB_DISKMON_DIRS = "\
 
 # Resource caps for the Hetzner box (32G RAM). BB_NUMBER_THREADS is the OOM lever
 # (parallel recipes), so keep it low; PARALLEL_MAKE speeds up the clang-native
-# long pole; CARGO_BUILD_JOBS stays low (rustc/LTO of the slint graph is heavy).
+# long pole. CARGO_BUILD_JOBS bounds cargo/rustc and Skia's internal ninja (it
+# reads NUM_JOBS, which cargo derives from this); the Slint+Skia graph is the
+# long pole, so give it a few jobs. LTO is off in those recipes, which keeps the
+# peak RAM of the parallel Skia C++ compiles in check.
 BB_NUMBER_THREADS = "4"
 PARALLEL_MAKE = "-j 8"
-export CARGO_BUILD_JOBS = "2"
+export CARGO_BUILD_JOBS = "6"
 EOF
 
     # Reuse a persistent sstate cache (the shared Hetzner Volume) when provided.

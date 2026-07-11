@@ -57,13 +57,9 @@ do_compile:prepend() {
     export CARGO_HTTP_TIMEOUT=120
     export CARGO_NET_RETRY=5
 
-    # Skia + LTO is very RAM-hungry; keep LTO off (as slint-demos does).
+    # Skia + LTO is very RAM-hungry; keep LTO off (as slint-demos does). The job
+    # count is bounded globally via CARGO_BUILD_JOBS (see common.sh).
     export CARGO_PROFILE_RELEASE_LTO=false
-
-    # Cargo otherwise fans out rustc to all host cores, and Skia's build script
-    # reads NUM_JOBS (which cargo derives from this) for its internal ninja.
-    # Cap both to keep peak memory bounded and avoid OOM.
-    export CARGO_BUILD_JOBS="6"
 }
 
 INSANE_SKIP:${PN} += "buildpaths"
