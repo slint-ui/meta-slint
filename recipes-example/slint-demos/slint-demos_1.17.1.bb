@@ -1,7 +1,10 @@
 inherit cargo
 inherit pkgconfig
 
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=master"
+# Pinned to a release (not master): the demos get reshuffled on master, e.g. the
+# cargo-workspace split that broke the build below. v1.17.1 tag.
+SLINT_REV = "cf62c975c311e7036d599ed8ed0b7e6a8386a934"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
 SRC_URI += "file://0001-WIP-v-1-14-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=1fa63388f53bdc8a49fc4eef67b55c87"
 
@@ -13,8 +16,6 @@ LICENSE = "GPL-3.0-only | Slint-Commercial"
 
 inherit slint_common
 inherit features_check
-
-PV = "git-${SRCPV}"
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
