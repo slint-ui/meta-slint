@@ -1,23 +1,10 @@
 #!/bin/bash
-# Shared build steps for the Raspberry Pi Slint demo images.
+# Shared build for the Raspberry Pi Slint demo images. The rpi4.sh / rpi5.sh
+# wrappers set MACHINE, then call slint_demo_build_rpi; the rest is common.
+# meta-raspberrypi is a community layer, so we clone poky + the layers directly.
 #
-# The per-Pi scripts (rpi4.sh, rpi5.sh) differ only in the target MACHINE;
-# everything else -- the poky/meta-* checkout, the layer set, the distro
-# features and the artifact collection -- is identical, so it lives here.
-# Source common.sh and this file, set MACHINE, then call slint_demo_build_rpi.
-#
-# meta-raspberrypi is a plain community layer, so we bootstrap by cloning poky
-# and the extra layers directly (no vendor manifest or EULA involved).
-#
-# Reads from the environment (defaults in parentheses):
-#   YOCTO_RELEASE  (scarthgap)   branch used for poky + the OE layers
-#   MACHINE        (required)    set by the caller, e.g. raspberrypi5
-#   DISTRO         (poky)
-#   IMAGE          (rpi-image-slint-demos)
-#   WORK_ROOT      ($PWD)        build tree is created here
-#   ARTIFACT_DIR   ($WORK_ROOT/artifacts)  flashable image copied here
-#   SSTATE_DIR     (unset)       set to a persistent path to reuse an sstate cache
-#   META_SLINT_DIR (required)    path to this meta-slint checkout
+# Env: MACHINE, META_SLINT_DIR (required); YOCTO_RELEASE (scarthgap), DISTRO
+# (poky), IMAGE, WORK_ROOT, ARTIFACT_DIR, SSTATE_DIR (optional).
 
 slint_demo_build_rpi() {
     local yocto_release="${YOCTO_RELEASE:-scarthgap}"
@@ -51,16 +38,13 @@ slint_demo_build_rpi() {
         git clone https://github.com/rust-embedded/meta-rust-bin.git "$src/meta-rust-bin"
     fi
 
-    # --- Initialise the build directory. ---
-    # oe-init-build-env references unset variables (BBSERVER, ...) and returns
-    # non-zero in places, so relax the shell's strict flags while sourcing it.
+    # oe-init-build-env touches unset vars / returns non-zero, so relax strict mode.
     set +eu
     source "$src/poky/oe-init-build-env" "$work_root/build"
     set -eu
 
-    # --- Add the layers. Order matters for LAYERDEPENDS: meta-python before
-    # meta-networking, and meta-rust-bin before meta-slint. meta-raspberrypi
-    # depends on the meta-oe/python/multimedia/networking layers. ---
+    # Layer order matters for LAYERDEPENDS (meta-python before meta-networking,
+    # meta-rust-bin before meta-slint).
     bitbake-layers add-layer \
         "$src/meta-openembedded/meta-oe" \
         "$src/meta-openembedded/meta-python" \
@@ -71,38 +55,20 @@ slint_demo_build_rpi() {
         "$src/meta-rust-bin" \
         "$meta_slint_dir"
 
-    # --- Machine + Slint + disk-conservation configuration. ---
     echo "MACHINE = \"$machine\"" >> conf/local.conf
     echo "DISTRO ?= \"$distro\"" >> conf/local.conf
-    # The Slint demos need an OpenGL-capable distro (KMS/DRM + GLES via Mesa's V3D).
+    # KMS/DRM + GLES (Mesa V3D).
     echo 'DISTRO_FEATURES:append = " opengl"' >> conf/local.conf
-    # The Raspberry Pi WiFi firmware (linux-firmware-rpidistro), pulled in by the
-    # base image, carries the "synaptics-killswitch" license flag; accept it so the
-    # firmware is buildable instead of skipped.
+    # Accept the RPi WiFi firmware's license flag so it builds instead of skipping.
     echo 'LICENSE_FLAGS_ACCEPTED:append = " synaptics-killswitch"' >> conf/local.conf
-    # poky defaults to sysvinit, but the slint-demos autostart is a systemd unit
-    # and the image relies on systemd-networkd for DHCP -- switch the init
-    # manager to systemd so both actually run on boot.
+    # slint-demos autostart is a systemd unit and DHCP uses systemd-networkd.
     echo 'INIT_MANAGER = "systemd"' >> conf/local.conf
     slint_demo_configure_local_conf conf/local.conf
 
-    # Point sstate at a persistent cache (e.g. a mounted Hetzner Volume) when the
-    # workflow provides one; DL_DIR is deliberately left at its default so downloads
-    # stay ephemeral. A warm sstate restores most recipes without re-fetching.
-    if [ -n "${SSTATE_DIR:-}" ]; then
-        echo "SSTATE_DIR = \"$SSTATE_DIR\"" >> conf/local.conf
-    fi
-
-    # --- Build. ---
     bitbake "$image"
 
-    # --- Collect the flashable image for the workflow to publish. ---
-    # Ship the uncompressed raw image, relabelled from .wic to .img (a .wic is
-    # just a raw disk image). The workflow bundles it into <device>-slint-demo.zip
-    # so balenaEtcher can open the zip and flash the single .img to an SD card.
-    # Match by extension (OpenEmbedded adds a ".rootfs" infix), and restrict to
-    # regular files so OE's convenience symlink doesn't duplicate the (large)
-    # image in the artifact.
+    # Ship the raw image, relabelled .wic -> .img. Match by extension (OE adds a
+    # ".rootfs" infix); regular files only, so OE's symlink doesn't duplicate it.
     export ARTIFACT_IMAGE_LABEL=img
     local deploy="tmp/deploy/images/$machine"
     local -a slint_demo_images
@@ -110,4 +76,54 @@ slint_demo_build_rpi() {
         find "$deploy" -maxdepth 1 -type f -name '*.wic' | sort
     )
     slint_demo_collect_artifacts "${slint_demo_images[@]}"
+
+    # README, bundled into the zip alongside the .img.
+    local artifact_basename="${ARTIFACT_BASENAME:-${machine}-slint-demo}"
+    local board_desc
+    case "$machine" in
+        raspberrypi4*) board_desc="Raspberry Pi 4" ;;
+        raspberrypi5)  board_desc="Raspberry Pi 5" ;;
+        *)             board_desc="Raspberry Pi ($machine)" ;;
+    esac
+    local title="Slint demo image for the $board_desc"
+    local rule="${title//?/=}"
+    cat > "$ARTIFACT_DIR/README.txt" <<EOF
+$title
+$rule
+
+This image boots straight into the Slint demo, rendered on the HDMI display
+via KMS/DRM.
+
+Contents of ${artifact_basename}.zip:
+  ${artifact_basename}.img   a raw SD-card image (full disk: boot + root partitions)
+  README.txt                 this file
+
+Flashing an SD card
+-------------------
+The image is a plain raw disk image; use any image writer:
+
+  * Raspberry Pi Imager: "Use custom" -> select ${artifact_basename}.zip -> pick
+    the SD card.
+  * Command line:
+      unzip ${artifact_basename}.zip
+      sudo dd if=${artifact_basename}.img of=/dev/sdX bs=4M conv=fsync status=progress
+    (replace /dev/sdX with your SD card device)
+
+First boot
+----------
+Insert the card, connect an HDMI display, and power on. The Slint demo starts
+automatically on the screen.
+
+Networking
+----------
+  * Wired Ethernet comes up automatically via DHCP.
+  * Zeroconf/mDNS is enabled, so the board is reachable by name at
+    <hostname>.local -- the default hostname is the machine name, e.g.
+    ${machine}.local.
+  * An SSH server (dropbear) is running on port 22 (set a root password or key
+    to log in).
+
+Wi-Fi is not preconfigured.
+EOF
+    echo "Wrote README.txt"
 }
