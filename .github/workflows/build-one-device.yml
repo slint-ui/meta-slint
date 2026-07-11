@@ -1,0 +1,227 @@
+name: Build one demo image
+
+# Reusable workflow: build the Slint demo image for a SINGLE device on a
+# dedicated Hetzner instance and publish it to the rolling "demo-images" release.
+# The device id must match scripts/demo-images/<device>.sh. Secrets (via
+# `secrets: inherit`): GH_API_KEY (Hetzner runner action), HETZNER_API_KEY.
+
+on:
+  workflow_call:
+    inputs:
+      device:
+        description: "Device id (matches scripts/demo-images/<device>.sh)"
+        type: string
+        required: true
+      publish_to_release:
+        description: "Upload the image to the demo-images release; if false, keep it only as a workflow artifact"
+        type: boolean
+        default: true
+        required: false
+
+jobs:
+  prepare_env:
+    runs-on: ubuntu-latest
+    name: Create new Hetzner Cloud instance for build
+    outputs:
+      label: ${{ steps.create-runner.outputs.label }}
+      server_id: ${{ steps.create-runner.outputs.server_id }}
+    steps:
+      - name: "wait for the sstate volume to detach from the previous build"
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HETZNER_API_KEY }}
+        run: |
+          # A deleted Hetzner server detaches its volume asynchronously, after the
+          # previous build's delete-runner job returned. Wait until the shared
+          # sstate volume is free, else this build fails to attach it.
+          vol=106201634
+          for i in $(seq 1 60); do
+            server=$(curl -fsSL -H "Authorization: Bearer $HCLOUD_TOKEN" \
+              "https://api.hetzner.cloud/v1/volumes/$vol" | jq -r '.volume.server // "null"')
+            if [ "$server" = "null" ]; then
+              echo "sstate volume $vol is free after $((i - 1)) poll(s)"; exit 0
+            fi
+            echo "sstate volume $vol still attached to server $server; waiting ($i/60)..."
+            sleep 10
+          done
+          echo "::error::timed out waiting for sstate volume $vol to detach"; exit 1
+      - uses: Cyclenerd/hcloud-github-runner@v1
+        id: create-runner
+        with:
+          mode: create
+          github_token: ${{ secrets.GH_API_KEY }}
+          hcloud_token: ${{ secrets.HETZNER_API_KEY }}
+          # 32G RAM / 320G disk; must be created in the sstate volume's location
+          # (nbg1) to attach it. The action mounts it at /mnt/HC_Volume_<id>.
+          server_type: cx53
+          location: nbg1
+          volume: "106201634"
+
+  build:
+    runs-on: ${{ needs.prepare_env.outputs.label }}
+    needs: prepare_env
+    # For `gh release upload`.
+    permissions:
+      contents: write
+    # A from-scratch vendor BSP build runs past GitHub's default 6h limit.
+    timeout-minutes: 600
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            path: 'meta-slint'
+      - name: dependency setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chrpath diffstat lz4 locales build-essential wget cpio file gawk zstd python3 git curl xz-utils zip
+          sudo locale-gen en_US.UTF-8
+          sudo update-locale
+          # GitHub CLI (not preinstalled) to publish into the demo-images release.
+          sudo mkdir -p -m 755 /etc/apt/keyrings
+          wget -nv -O- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+          sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+            | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y gh
+      - name: "user & machine setup"
+        run: |
+          # OE's pseudo/bitbake need unprivileged user namespaces, restricted by
+          # default on recent Ubuntu.
+          echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          id -u build &>/dev/null || useradd -m build
+          echo "build ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/build
+          chown -R build:build ${{ runner.workspace }}
+          # Mount the sstate cache from the attached Hetzner Volume ourselves (the
+          # runner action attaches it as a raw device but doesn't mount it). A
+          # Volume attaches to only one server at a time, so if another build holds
+          # it the mount fails -- fail hard rather than silently building cold on
+          # the ephemeral disk (which could also race the shared cache).
+          SSTATE_VOL=/dev/disk/by-id/scsi-0HC_Volume_106201634
+          SSTATE_MNT=/mnt/HC_Volume_106201634
+          if [ ! -b "$SSTATE_VOL" ]; then
+            echo "::error::sstate volume $SSTATE_VOL is not attached -- another build is likely holding it; failing."
+            lsblk; exit 1
+          fi
+          # Format once if the volume is still blank.
+          if ! sudo blkid "$SSTATE_VOL" >/dev/null 2>&1; then
+            echo "Volume has no filesystem; creating ext4 (one-time)."
+            sudo mkfs.ext4 -F -L sstate "$SSTATE_VOL"
+          fi
+          sudo mkdir -p "$SSTATE_MNT"
+          if ! mountpoint -q "$SSTATE_MNT"; then
+            sudo mount "$SSTATE_VOL" "$SSTATE_MNT" || {
+              echo "::error::failed to mount sstate volume $SSTATE_VOL -- another build may be holding it; failing."
+              lsblk; df -h; exit 1
+            }
+          fi
+          # Verify the mount really is the sstate volume before building on it.
+          if ! mountpoint -q "$SSTATE_MNT"; then
+            echo "::error::$SSTATE_MNT is not a mountpoint -- refusing to build without the sstate volume."
+            lsblk; df -h; exit 1
+          fi
+          mount_src=$(findmnt -no SOURCE --target "$SSTATE_MNT" || true)
+          if [ "$(readlink -f "$mount_src")" != "$(readlink -f "$SSTATE_VOL")" ]; then
+            echo "::error::$SSTATE_MNT is backed by '$mount_src', not the sstate volume $SSTATE_VOL; failing."
+            lsblk; df -h; exit 1
+          fi
+          echo "sstate volume mounted:"; df -h "$SSTATE_MNT"
+          sudo mkdir -p "$SSTATE_MNT/sstate-cache"
+          sudo chown build:build "$SSTATE_MNT/sstate-cache"
+      - name: "build ${{ inputs.device }} demo image"
+        run: |
+          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
+          # Per-device build tree, so a reused runner never mixes two devices.
+          WORK_ROOT=${{ runner.workspace }}/build-${{ inputs.device }}
+          echo "sstate objects before build: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
+          su - build -c "cd ${{ runner.workspace }}/meta-slint && \
+            WORK_ROOT='${WORK_ROOT}' \
+            ARTIFACT_DIR='${WORK_ROOT}/artifacts' \
+            ARTIFACT_BASENAME='${{ inputs.device }}-slint-demo' \
+            SSTATE_DIR='${SSTATE_DIR}' \
+            meta-slint/scripts/demo-images/${{ inputs.device }}.sh"
+          echo "sstate objects after build:  $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
+      - name: "package ${{ inputs.device }} image"
+        run: |
+          # Assemble the files to publish into publish/ so the upload steps are
+          # device-agnostic. Packaging differs per flashing method.
+          ART=${{ runner.workspace }}/build-${{ inputs.device }}/artifacts
+          PUB=${{ runner.workspace }}/build-${{ inputs.device }}/publish
+          mkdir -p "$PUB"
+          cd "$ART"
+          if [ "${{ inputs.device }}" = "imx95-evk" ]; then
+            # uuu/bmaptool bundle: .wic.zst + .bmap + bootloader + README. -0
+            # (store) since the .wic.zst is already compressed.
+            zip -j -0 "$PUB/${{ inputs.device }}-demo-image.zip" ./*
+          elif [ "${{ inputs.device }}" = "stm32mp1" ] || [ "${{ inputs.device }}" = "stm32mp2" ]; then
+            # STM32CubeProgrammer bundle (tarball, README inside) + standalone
+            # README, shipped as one zip. -0 since the tarball is already gzipped.
+            zip -j -0 "$PUB/${{ inputs.device }}-flash-bundle.zip" \
+              ./*-flash-bundle.tar.gz ./*-flash-bundle-README.txt
+          else
+            # Raspberry Pi: raw .img + README, deflated (the mostly-empty image
+            # shrinks a lot). A multi-file zip may need extracting before flashing.
+            shopt -s nullglob
+            imgs=(*.img)
+            if [ "${#imgs[@]}" -eq 0 ]; then
+              echo "::error::no .img artifact found to publish"; exit 1
+            fi
+            zip -j "$PUB/${{ inputs.device }}-slint-demo.zip" "${imgs[@]}" README.txt
+          fi
+          echo "Packaged for publishing:"; ls -l "$PUB"
+      - name: "upload ${{ inputs.device }} image to the demo-images release"
+        if: ${{ inputs.publish_to_release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Stable asset names + --clobber replace the previous build's asset.
+          PUB=${{ runner.workspace }}/build-${{ inputs.device }}/publish
+          for f in "$PUB"/*; do
+            echo "Uploading $(basename "$f") to the demo-images release"
+            gh release upload demo-images --repo "${{ github.repository }}" --clobber "$f"
+          done
+      - name: "upload ${{ inputs.device }} image as a workflow artifact"
+        if: ${{ ! inputs.publish_to_release }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.device }}-demo-image
+          path: ${{ runner.workspace }}/build-${{ inputs.device }}/publish
+          retention-days: 14
+          if-no-files-found: error
+      - name: "prune stale sstate objects"
+        # Best-effort, runs even on failure, to bound the shared Volume's growth.
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          SSTATE_MAX_AGE_DAYS: "30"
+        run: |
+          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
+          if ! mountpoint -q /mnt/HC_Volume_106201634; then
+            echo "sstate volume not mounted; nothing to prune"; exit 0
+          fi
+          before=$(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)
+          # Prune least-recently-used by atime (bitbake reads objects on restore;
+          # relies on the volume's default relatime -- don't mount it noatime).
+          sudo find "$SSTATE_DIR" -type f -name '*.tar.zst'         -atime +"$SSTATE_MAX_AGE_DAYS" -delete
+          sudo find "$SSTATE_DIR" -type f -name '*.tar.zst.siginfo' -atime +"$SSTATE_MAX_AGE_DAYS" -delete
+          # Always drop Slint's own sstate so each image rebuilds Slint fresh.
+          sudo find "$SSTATE_DIR" -type f -name 'sstate:slint*' -delete
+          sudo find "$SSTATE_DIR" -mindepth 1 -type d -empty -delete 2>/dev/null || true
+          after=$(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)
+          echo "sstate objects: $before -> $after (dropped Slint + anything unused > ${SSTATE_MAX_AGE_DAYS} days)"
+
+  delete-runner:
+    name: Delete Runner
+    needs:
+      - prepare_env
+      - build
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Delete runner
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: delete
+          github_token: ${{ secrets.GH_API_KEY }}
+          hcloud_token: ${{ secrets.HETZNER_API_KEY }}
+          name: ${{ needs.prepare_env.outputs.label }}
+          server_id: ${{ needs.prepare_env.outputs.server_id }}

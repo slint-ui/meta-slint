@@ -61,4 +61,5 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     kernel-module-nxp89xx \
     v4l-utils \
     slint-demos \
+    slint-viewer \
 "
