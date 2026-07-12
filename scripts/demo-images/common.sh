@@ -33,8 +33,7 @@ slint_demo_ensure_git_identity() {
 }
 
 # Append the config shared across every demo-image device to conf/local.conf:
-# the Slint feature set and disk-space conservation. No public sstate mirror --
-# vendor BSPs don't publish one, so everything builds locally.
+# the Slint feature set and disk-space conservation.
 slint_demo_configure_local_conf() {
     local conf="$1"
     cat >> "$conf" <<'EOF'
@@ -70,10 +69,22 @@ PARALLEL_MAKE = "-j 8"
 export CARGO_BUILD_JOBS = "2"
 EOF
 
-    # Reuse a persistent sstate cache (e.g. a mounted Hetzner Volume) when provided.
+    # Reuse a persistent sstate cache (the shared Hetzner Volume) when provided.
     if [ -n "${SSTATE_DIR:-}" ]; then
         echo "SSTATE_DIR = \"$SSTATE_DIR\"" >> "$conf"
+        # Hash equivalence keys sstate by a unihash whose taskhash->unihash map
+        # lives in a database. Keep that database next to the shared sstate rather
+        # than in the ephemeral build dir (bitbake's default), so the mappings
+        # persist across builds -- otherwise every build computes fresh unihashes
+        # and nothing on the Volume matches, defeating sstate reuse entirely.
+        echo 'BB_HASHSERVE_DB_DIR = "${SSTATE_DIR}"' >> "$conf"
     fi
+
+    # No public sstate mirror: it can't be used together with our local hash
+    # equivalence server (unihashes don't line up with the mirror's), so bitbake
+    # warns and its mismatched restore probes surface as setscene errors -- and it
+    # never provided hits for this vendor-BSP config anyway. Our own Volume
+    # (SSTATE_DIR + a shared hashserv DB) is the sstate cache.
 }
 
 # Copy the given files into $ARTIFACT_DIR for a later workflow step to publish.
