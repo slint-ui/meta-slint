@@ -144,8 +144,35 @@ jobs:
           echo "Wiping the sstate Volume for a clean baseline (objects + hash-equiv DB)"
           sudo find "$SSTATE_DIR" -mindepth 1 -delete 2>/dev/null || true
           echo "Volume after wipe: $(df -h "$SSTATE_DIR" | awk 'NR==2 {print $4" free of "$2}')"
+      - name: "make room on the sstate Volume"
+        # bitbake reads AND writes sstate directly on the shared Volume (below), so
+        # ensure free headroom up front -- a fully cold build must not fill the
+        # Volume mid-way (which halts it). Evict least-recently-accessed objects to
+        # the target; LRU keeps the objects this build will actually restore.
+        env:
+          SSTATE_VOL_MIN_FREE_PCT: "25"
+        run: |
+          set +e +o pipefail
+          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
+          mountpoint -q /mnt/HC_Volume_106201634 || { echo "Volume not mounted"; exit 0; }
+          read -r total_kb avail_kb < <(df -P "$SSTATE_DIR" | awk 'NR==2 {print $2, $4}')
+          target_kb=$(( total_kb * SSTATE_VOL_MIN_FREE_PCT / 100 ))
+          if [ "$avail_kb" -lt "$target_kb" ]; then
+            need_kb=$(( target_kb - avail_kb )); freed_kb=0
+            while IFS=$'\t' read -r -d '' size_kb path; do
+              [ "$freed_kb" -ge "$need_kb" ] && break
+              sudo rm -f "$path" "${path}.siginfo"
+              freed_kb=$(( freed_kb + size_kb ))
+            done < <(find "$SSTATE_DIR" -type f -name '*.tar.zst' \
+                       -printf '%A@\t%k\t%p\0' | sort -zn | sed -z 's/^[0-9.]*\t//')
+            echo "evicted ~$(( freed_kb / 1024 / 1024 ))G of least-recently-used sstate"
+          fi
+          echo "Volume: $(df -h "$SSTATE_DIR" | awk 'NR==2 {print $4" free of "$2}')"
       - name: "build ${{ inputs.device }} demo image"
         run: |
+          # sstate lives directly on the shared Volume: bitbake restores from and
+          # writes to it in place (the model main uses, where restore works). The
+          # step above guarantees headroom so a cold build can't fill it mid-way.
           SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
           # Per-device build tree, so a reused runner never mixes two devices.
           WORK_ROOT=${{ runner.workspace }}/build-${{ inputs.device }}
@@ -156,7 +183,7 @@ jobs:
             ARTIFACT_BASENAME='${{ inputs.device }}-slint-demo' \
             SSTATE_DIR='${SSTATE_DIR}' \
             meta-slint/scripts/demo-images/${{ inputs.device }}.sh"
-          echo "sstate objects after build:  $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
+          echo "sstate objects after build: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
       - name: "package ${{ inputs.device }} image"
         run: |
           # Assemble the files to publish into publish/ so the upload steps are
@@ -204,27 +231,19 @@ jobs:
           path: ${{ runner.workspace }}/build-${{ inputs.device }}/publish
           retention-days: 14
           if-no-files-found: error
-      - name: "prune stale sstate objects"
-        # Best-effort, runs even on failure, to bound the shared Volume's growth.
+      - name: "drop Slint sstate from the Volume"
+        # Each image rebuilds Slint fresh (its crate deps are fetched at compile
+        # time and aren't captured in the sstate hash). Everything else was written
+        # straight to the Volume during the build, so there's nothing to copy back.
         if: ${{ always() }}
         continue-on-error: true
-        env:
-          SSTATE_MAX_AGE_DAYS: "30"
         run: |
+          set +e
           SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
-          if ! mountpoint -q /mnt/HC_Volume_106201634; then
-            echo "sstate volume not mounted; nothing to prune"; exit 0
-          fi
-          before=$(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)
-          # Prune least-recently-used by atime (bitbake reads objects on restore;
-          # relies on the volume's default relatime -- don't mount it noatime).
-          sudo find "$SSTATE_DIR" -type f -name '*.tar.zst'         -atime +"$SSTATE_MAX_AGE_DAYS" -delete
-          sudo find "$SSTATE_DIR" -type f -name '*.tar.zst.siginfo' -atime +"$SSTATE_MAX_AGE_DAYS" -delete
-          # Always drop Slint's own sstate so each image rebuilds Slint fresh.
+          mountpoint -q /mnt/HC_Volume_106201634 || exit 0
           sudo find "$SSTATE_DIR" -type f -name 'sstate:slint*' -delete
           sudo find "$SSTATE_DIR" -mindepth 1 -type d -empty -delete 2>/dev/null || true
-          after=$(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)
-          echo "sstate objects: $before -> $after (dropped Slint + anything unused > ${SSTATE_MAX_AGE_DAYS} days)"
+          echo "Volume sstate objects: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l) (free: $(df -h "$SSTATE_DIR" | awk 'NR==2 {print $4}'))"
 
   delete-runner:
     name: Delete Runner
