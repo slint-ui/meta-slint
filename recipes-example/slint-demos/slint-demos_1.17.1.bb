@@ -35,6 +35,12 @@ CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=
 # So append --features explicitly so machine-specific CARGO_FEATURES overrides take effect.
 CARGO_BUILD_FLAGS:append = " ${@'--features ' + ','.join(d.getVar('CARGO_FEATURES').split()) if d.getVar('CARGO_FEATURES') else ''}"
 
+# Build only the demo binaries. A bare `cargo build` compiles the whole default
+# workspace -- including slint-viewer (which has its own recipe) and other tools
+# -- which is slow and made slint-demos ship /usr/bin/slint-viewer, clashing with
+# the slint-viewer package at rootfs time. Scope the build with one -p per demo.
+CARGO_BUILD_FLAGS:append = " ${@' '.join('-p ' + p for p in (d.getVar('SLINT_DEMOS') or '').split())}"
+
 do_configure[network] = "1"
 do_compile[network] = "1"
 
@@ -54,13 +60,10 @@ do_compile:prepend() {
     export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
     export CARGO_HTTP_TIMEOUT=120
     export CARGO_NET_RETRY=5
+    # Skia + LTO is very RAM-hungry; keep LTO off.
+    export CARGO_PROFILE_RELEASE_LTO=false
 }
 do_compile:append() {
-    # Reduce RAM requirements
-    export CARGO_PROFILE_RELEASE_LTO=false
-    for p in ${SLINT_DEMOS}; do
-        cargo build ${CARGO_BUILD_FLAGS} -p $p
-    done
     rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.so
     rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.rlib
 }
