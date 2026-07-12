@@ -4,6 +4,14 @@ TARGET_CFLAGS:remove = "-fcanon-prefix-map"
 # not every BSP provides ninja-native (OpenSTLinux doesn't), so depend on it.
 DEPENDS:append:class-target = " ninja-native"
 
+# skia-bindings also runs bindgen, which dlopens libclang.so to generate the Rust
+# bindings for Skia's headers. Provide the native libclang and point bindgen at
+# it via LIBCLANG_PATH; the target headers are still parsed cross, through the
+# --target/--sysroot in BINDGEN_EXTRA_CLANG_ARGS below. (meta-rust-bin used to
+# make this discoverable; oe-core's cargo does not.)
+DEPENDS:append:class-target = " clang-native"
+export LIBCLANG_PATH = "${STAGING_LIBDIR_NATIVE}"
+
 do_compile:prepend() {
     #export RUSTFLAGS="${RUSTFLAGS}"
     #export RUST_TARGET_PATH="${RUST_TARGET_PATH}"
