@@ -17,6 +17,11 @@ on:
         type: boolean
         default: true
         required: false
+      wipe_sstate:
+        description: "Wipe the shared sstate Volume before building (clean cold rebuild + fresh hash-equiv DB)"
+        type: boolean
+        default: false
+        required: false
 
 jobs:
   prepare_env:
@@ -127,6 +132,18 @@ jobs:
           echo "sstate volume mounted:"; df -h "$SSTATE_MNT"
           sudo mkdir -p "$SSTATE_MNT/sstate-cache"
           sudo chown build:build "$SSTATE_MNT/sstate-cache"
+      - name: "wipe the sstate Volume (opt-in, one-time clean rebuild)"
+        # Clear the shared Volume for a clean cold rebuild that repopulates good
+        # objects and a fresh hash-equivalence DB -- e.g. after config churn left
+        # stale objects that fail to restore. Off by default.
+        if: ${{ inputs.wipe_sstate }}
+        run: |
+          set +e
+          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
+          mountpoint -q /mnt/HC_Volume_106201634 || { echo "Volume not mounted"; exit 0; }
+          echo "Wiping the sstate Volume for a clean baseline (objects + hash-equiv DB)"
+          sudo find "$SSTATE_DIR" -mindepth 1 -delete 2>/dev/null || true
+          echo "Volume after wipe: $(df -h "$SSTATE_DIR" | awk 'NR==2 {print $4" free of "$2}')"
       - name: "build ${{ inputs.device }} demo image"
         run: |
           SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache

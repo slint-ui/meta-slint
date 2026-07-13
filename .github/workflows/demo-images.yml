@@ -34,6 +34,10 @@ on:
         description: "Upload the built image(s) to the demo-images release (untick to keep them as workflow artifacts only)"
         type: boolean
         default: true
+      wipe_sstate:
+        description: "Wipe the shared sstate Volume first (one-time clean rebuild; every selected board rebuilds cold)"
+        type: boolean
+        default: false
 
 # Only one demo-images run at a time (shared Hetzner Volume); queue a new run
 # behind the one in flight rather than dropping it.
@@ -79,4 +83,5 @@ jobs:
     with:
       device: ${{ matrix.device }}
       publish_to_release: ${{ inputs.publish_to_release }}
+      wipe_sstate: ${{ inputs.wipe_sstate }}
     secrets: inherit
