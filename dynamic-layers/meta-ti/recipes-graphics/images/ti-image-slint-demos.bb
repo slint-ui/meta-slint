@@ -21,6 +21,16 @@ CORE_IMAGE_BASE_INSTALL += " \
     libnss-mdns \
 "
 
+# DRM/KMS debugging helpers on both boards. These inspect the display path and
+# need no GPU, so they're useful for a dark screen on either board: libdrm-tests
+# (modetest/proptest/modeprint/kmstest) to list the KMS connectors/planes/modes
+# and push a test pattern, and drm-info for a readable dump of every DRM node.
+# Drop this block for a lean production image.
+CORE_IMAGE_BASE_INSTALL += " \
+    libdrm-tests \
+    drm-info \
+"
+
 # The KMS/DRM display path. TI's kernel builds the display-subsystem driver
 # (tidss) and the on-board HDMI bridge (sii902x on the SK boards) as loadable
 # modules, but the machine config doesn't mark them essential -- so a bare
@@ -46,6 +56,17 @@ IMAGE_INSTALL:append:am62pxx-evm = " \
     ti-img-rogue-umlibs \
     mesa-megadriver \
     libegl libgles2 libgbm \
+"
+
+# GLES/GPU smoke tests, AM62Px only -- these exercise the GPU userspace, which
+# only this board ships. mesa-demos (eglinfo/es2_info/es2gears) confirms which
+# EGL/GLES driver is actually loaded (PowerVR vs a software fall-back), and
+# kmscube is a no-compositor GBM/KMS GLES test. AM62L renders in software and has
+# no GLES userspace, so installing these there would only pull mesa onto it for
+# tests that don't reflect its real render path -- leave them off.
+IMAGE_INSTALL:append:am62pxx-evm = " \
+    mesa-demos \
+    kmscube \
 "
 
 # Raw SD-card image; the workflow relabels it to <device>-slint-demo.img and zips
