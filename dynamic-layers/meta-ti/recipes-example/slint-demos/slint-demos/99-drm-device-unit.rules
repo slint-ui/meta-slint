@@ -1,0 +1,5 @@
+# Tag DRM card devices so systemd creates a dev-dri-cardN.device unit for each.
+# Without this tag systemd never materialises dev-dri-card0.device, so the
+# slint-demos service (which orders itself After that unit) would have nothing to
+# wait on and could start before tidss/sii902x probe the display.
+ACTION=="add", SUBSYSTEM=="drm", KERNEL=="card*", TAG+="systemd"
