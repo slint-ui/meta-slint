@@ -60,6 +60,6 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     nxp-wlan-sdk \
     kernel-module-nxp89xx \
     v4l-utils \
-    slint-demos \
+    slint-launcher \
     slint-viewer \
 "

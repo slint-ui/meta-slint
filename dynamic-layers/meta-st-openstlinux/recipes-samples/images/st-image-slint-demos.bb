@@ -14,6 +14,9 @@ IMAGE_FEATURES += "ssh-server-dropbear"
 
 # Just the demos (+ fonts), none of the dev framework st-example-image-slint
 # pulls in, to keep the image and its flashing bundle small.
+# The launcher is the boot entry point (autostarts via slint-launcher.service),
+# and RDEPENDS the demos + viewer it launches.
 CORE_IMAGE_EXTRA_INSTALL += " \
     packagegroup-framework-sample-slint \
+    slint-launcher \
 "
