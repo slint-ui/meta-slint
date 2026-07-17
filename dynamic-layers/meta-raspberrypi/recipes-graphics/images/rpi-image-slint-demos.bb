@@ -6,8 +6,11 @@ inherit core-image
 
 IMAGE_FEATURES += "ssh-server-dropbear"
 
+# The launcher is the boot entry point: it autostarts (slint-launcher.service),
+# presents a menu, and launches the demos / remote viewer. It RDEPENDS slint-demos
+# and slint-viewer, so installing it pulls them in as the launchable binaries.
 CORE_IMAGE_BASE_INSTALL += " \
-    slint-demos \
+    slint-launcher \
     liberation-fonts \
 "
 
