@@ -1,4 +1,4 @@
-inherit cargo_bin
+inherit cargo
 inherit pkgconfig
 
 # The launcher (demos/launcher) only exists on master; it is not in the release
@@ -17,11 +17,12 @@ HOMEPAGE = "https://slint.dev/"
 LICENSE = "GPL-3.0-only | Slint-Commercial"
 
 inherit slint_common
+inherit features_check
 
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgles2"
-DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH} ca-certificates-native curl-native"
+DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH} ca-certificates-native curl-native ninja-native"
 DEPENDS:append:class-target = " libdrm virtual/egl virtual/libgbm seatd udev libinput"
 DEPENDS:append:class-target = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'libxcb', '', d)} \
@@ -33,12 +34,8 @@ RDEPENDS:${PN}:class-target += "xkeyboard-config"
 # "remote viewer" entry, so both must be installed alongside it.
 RDEPENDS:${PN}:class-target += "slint-demos slint-viewer"
 
+# Fetch crate dependencies straight from crates.io rather than pre-vendoring.
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
-
-do_configure[network] = "1"
-do_compile[network] = "1"
-
-S = "${WORKDIR}/git"
 
 # On master the demos live in their own cargo workspace (demos/), separate from
 # the repo root -- so build the launcher package from that manifest, not the root
@@ -49,17 +46,35 @@ S = "${WORKDIR}/git"
 # enabling that feature makes Skia the default renderer, so no runtime override
 # is needed.
 CARGO_MANIFEST_PATH = "${S}/demos/Cargo.toml"
-EXTRA_CARGO_FLAGS = "--no-default-features --features backend-linuxkms,renderer-skia -p launcher"
+CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=${CARGO_MANIFEST_PATH} --no-default-features -p launcher"
+
+# cargo.bbclass passes features only via PACKAGECONFIG_CONFARGS (empty here);
+# So append --features explicitly so machine-specific CARGO_FEATURES overrides take effect.
+CARGO_BUILD_FLAGS:append = " ${@'--features ' + ','.join(d.getVar('CARGO_FEATURES').split()) if d.getVar('CARGO_FEATURES') else ''}"
+
+CARGO_FEATURES = "backend-linuxkms renderer-skia"
+
+do_configure[network] = "1"
+do_compile[network] = "1"
 
 do_compile:prepend() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
-    export CARGO_PROFILE_RELEASE_LTO=false   # reduce RAM
+    # Use the git protocol for the crates.io index instead of sparse HTTP
+    # so cargo doesn't open hundreds of HTTP/1.1 connections at once
+    # (OE-core's curl-native is built without HTTP/2).
+    export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
+    export CARGO_HTTP_TIMEOUT=120
+    export CARGO_NET_RETRY=5
+    # Skia + LTO is very RAM-hungry; keep LTO off (as slint-demos does).
+    export CARGO_PROFILE_RELEASE_LTO=false
 }
 do_compile:append() {
-    rm -f "${CARGO_BINDIR}"/*.so
-    rm -f "${CARGO_BINDIR}"/*.rlib
+    rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.so
+    rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.rlib
 }
+
+INSANE_SKIP:${PN} += "buildpaths"
 
 # The launcher is the boot entry point: autostart it, and it launches the demos.
 inherit systemd
