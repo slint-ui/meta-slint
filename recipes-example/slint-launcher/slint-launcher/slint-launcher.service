@@ -1,0 +1,12 @@
+[Unit]
+Description=Slint demo launcher (menu to discover and run the installed demos)
+
+[Service]
+ExecStart=/usr/bin/slint-demo-launcher
+# The launcher exec()s into the chosen demo (same PID), so systemd only sees an
+# exit when that demo quits -- restart then, to return to the launcher menu.
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

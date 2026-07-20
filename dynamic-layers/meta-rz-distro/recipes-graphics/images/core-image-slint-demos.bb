@@ -6,7 +6,7 @@ LICENSE = "MIT"
 
 inherit core-image
 
-CORE_IMAGE_BASE_INSTALL += "slint-demos slint-viewer liberation-fonts"
+CORE_IMAGE_BASE_INSTALL += "slint-launcher slint-viewer liberation-fonts"
 
 QB_MEM = "-m 512"
 
