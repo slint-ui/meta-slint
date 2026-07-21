@@ -18,8 +18,6 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=1fa63388f53bdc8a49fc4eef67b55c87"
 SLINT_REV = "cf62c975c311e7036d599ed8ed0b7e6a8386a934"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
 
-S = "${WORKDIR}/git"
-
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 # Same dependency set as the slint-demos recipe (linuxkms + skia renderer),

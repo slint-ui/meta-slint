@@ -9,7 +9,12 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=9e911597e678943cde54111f7518e299"
 
 DEPENDS:append = " fontconfig"
 
-S = "${WORKDIR}/git"
+# scarthgap needs S at the git checkout; newer OE (whinlatter/wrynose) sets it
+# itself and rejects the explicit assignment, so only set it on scarthgap.
+python () {
+    if 'scarthgap' in (d.getVar('LAYERSERIES_CORENAMES') or '').split():
+        d.setVar('S', '${WORKDIR}/git')
+}
 PV = "slint-hello-world-rust-${SRCPV}"
 
 do_compile[network] = "1"

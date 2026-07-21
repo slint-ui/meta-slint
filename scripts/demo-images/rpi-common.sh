@@ -3,11 +3,11 @@
 # wrappers set MACHINE, then call slint_demo_build_rpi; the rest is common.
 # meta-raspberrypi is a community layer, so we clone poky + the layers directly.
 #
-# Env: MACHINE, META_SLINT_DIR (required); YOCTO_RELEASE (scarthgap), DISTRO
+# Env: MACHINE, META_SLINT_DIR (required); YOCTO_RELEASE (wrynose), DISTRO
 # (poky), IMAGE, WORK_ROOT, ARTIFACT_DIR, SSTATE_DIR (optional).
 
 slint_demo_build_rpi() {
-    local yocto_release="${YOCTO_RELEASE:-scarthgap}"
+    local yocto_release="${YOCTO_RELEASE:-wrynose}"
     local machine="${MACHINE:?MACHINE must be set by the caller (e.g. raspberrypi5)}"
     local distro="${DISTRO:-poky}"
     local image="${IMAGE:-rpi-image-slint-demos}"

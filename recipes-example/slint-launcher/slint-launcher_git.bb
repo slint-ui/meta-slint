@@ -38,8 +38,6 @@ CARGO_DISABLE_BITBAKE_VENDORING = "1"
 do_configure[network] = "1"
 do_compile[network] = "1"
 
-S = "${WORKDIR}/git"
-
 # On master the demos live in their own cargo workspace (demos/), separate from
 # the repo root -- so build the launcher package from that manifest, not the root
 # (a plain "-p launcher" from the root workspace doesn't resolve). The produced

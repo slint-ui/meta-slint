@@ -4,6 +4,16 @@ TARGET_CFLAGS:remove = "-fcanon-prefix-map"
 # not every BSP provides ninja-native (OpenSTLinux doesn't), so depend on it.
 DEPENDS:append:class-target = " ninja-native"
 
+# S across OE releases: scarthgap's bitbake.conf does not derive S for git
+# fetches, so point it at the checkout; newer OpenEmbedded (whinlatter, wrynose)
+# sets S itself and hard-errors on an explicit "${WORKDIR}/git" assignment. Every
+# slint_common consumer is a git-checkout recipe, so set S only on scarthgap and
+# let bitbake.conf handle it elsewhere.
+python () {
+    if 'scarthgap' in (d.getVar('LAYERSERIES_CORENAMES') or '').split():
+        d.setVar('S', '${WORKDIR}/git')
+}
+
 do_compile:prepend() {
     #export RUSTFLAGS="${RUSTFLAGS}"
     #export RUST_TARGET_PATH="${RUST_TARGET_PATH}"

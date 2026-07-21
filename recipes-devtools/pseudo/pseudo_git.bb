@@ -1,5 +1,19 @@
 require pseudo.inc
 
+# This recipe only exists to backport the pseudo openat2 fix (pseudo 1.9.8) onto
+# the NXP i.MX scarthgap BSP, which pins pseudo 1.9.0 and breaks do_package on
+# newer host kernels. The Raspberry Pi build uses a newer OpenEmbedded (wrynose),
+# whose own oe-core pseudo already carries that fix -- and there this override is
+# both redundant and fatal: the "S = ${WORKDIR}/git" below is a hard error on
+# newer bitbake (bitbake.conf sets S itself). So restrict it to scarthgap;
+# elsewhere defer to oe-core's pseudo.
+python () {
+    if 'scarthgap' not in (d.getVar('LAYERSERIES_CORENAMES') or '').split():
+        raise bb.parse.SkipRecipe(
+            'pseudo override only needed on the scarthgap i.MX BSP; '
+            'oe-core pseudo already has the openat2 fix on this release')
+}
+
 SRC_URI = "git://git.yoctoproject.org/pseudo;branch=master;protocol=https \
            file://fallback-passwd \
            file://fallback-group \
