@@ -1,4 +1,4 @@
-inherit cargo
+inherit cargo_bin
 inherit pkgconfig
 inherit slint_common
 inherit features_check
@@ -35,31 +35,20 @@ RDEPENDS:${PN}:class-target += "xkeyboard-config"
 
 # Fetch crate dependencies straight from crates.io rather than pre-vendoring.
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
-CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=${CARGO_MANIFEST_PATH} -p slint-viewer --bin slint-viewer"
 
-# cargo.bbclass passes features only via PACKAGECONFIG_CONFARGS (empty here);
-# So append --features explicitly so machine-specific CARGO_FEATURES overrides take effect.
-CARGO_BUILD_FLAGS:append = " ${@'--features ' + ','.join(d.getVar('CARGO_FEATURES').split()) if d.getVar('CARGO_FEATURES') else ''}"
+# Build just the viewer binary (its cdylib lib target is Android-only). cargo_bin
+# turns CARGO_FEATURES into --features on its own.
+EXTRA_CARGO_FLAGS = "-p slint-viewer --bin slint-viewer"
+CARGO_FEATURES = "remote backend-linuxkms renderer-skia"
 
 do_configure[network] = "1"
 do_compile[network] = "1"
-
-CARGO_FEATURES = "remote backend-linuxkms renderer-skia"
 
 do_compile:prepend() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
 
-    # Use the git protocol for the crates.io index instead of sparse HTTP
-    # so cargo doesn't open hundreds of HTTP/1.1 connections at once
-    # (OE-core's curl-native is built without HTTP/2).
-    export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
-    export CARGO_HTTP_TIMEOUT=120
-    export CARGO_NET_RETRY=5
-
     # Skia + LTO is very RAM-hungry; keep LTO off (as slint-demos does). The job
     # count is bounded globally via CARGO_BUILD_JOBS (see common.sh).
     export CARGO_PROFILE_RELEASE_LTO=false
 }
-
-INSANE_SKIP:${PN} += "buildpaths"

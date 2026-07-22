@@ -12,13 +12,15 @@ git clone -b master https://git.openembedded.org/bitbake
 
 # bitbake-setup lands the build under bitbake-builds/poky-master/ (a
 # bitbake-builds "top dir" wrapper plus the setup-dir-name from the
-# registry config). Drop our two extra layers alongside the ones it cloned.
+# registry config). Drop our extra layers alongside the ones it cloned.
 git clone -b master https://github.com/kraj/meta-clang.git bitbake-builds/poky-master/layers/meta-clang
+git clone -b master https://github.com/rust-embedded/meta-rust-bin.git bitbake-builds/poky-master/layers/meta-rust-bin
 ln -s "$(cd "$(dirname "$0")/.." && pwd)" bitbake-builds/poky-master/layers/meta-slint
 
 cd bitbake-builds/poky-master
 . build/init-build-env
 bitbake-layers add-layer ../layers/meta-clang
+bitbake-layers add-layer ../layers/meta-rust-bin
 bitbake-layers add-layer ../layers/meta-slint
 
 echo 'PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"' >> conf/local.conf
