@@ -6,8 +6,10 @@ inherit core-image
 
 IMAGE_FEATURES += "ssh-server-dropbear"
 
+# The launcher is the boot entry point (autostarts via slint-launcher.service)
+# and RDEPENDS the demos + viewer it launches, so installing it pulls them in.
 CORE_IMAGE_BASE_INSTALL += " \
-    slint-demos \
+    slint-launcher \
     slint-viewer \
     liberation-fonts \
 "
@@ -74,10 +76,11 @@ IMAGE_INSTALL:append:am62pxx-evm = " \
 # (tiboot3/tispl/u-boot boot partition + ext4 rootfs).
 IMAGE_FSTYPES = "wic"
 
-# AM62L has no GPU. The autostarted demo picks the Skia software backend via its
-# systemd unit; also default interactive/remote-viewer (slint-viewer) runs to it
-# by putting it in the login environment. (systemd services don't read
-# /etc/environment, hence the separate unit setting.)
+# AM62L has no GPU. The launcher (and the demos it exec()s into) pick the Skia
+# software backend via a drop-in on slint-launcher.service (see the meta-ti
+# slint-launcher bbappend). This also puts SLINT_BACKEND in the login environment
+# so an interactive/remote-viewer (slint-viewer) session uses it too. (systemd
+# services don't read /etc/environment, hence the separate unit setting.)
 set_slint_software_backend() {
     echo 'SLINT_BACKEND=linuxkms-skia-software' >> ${IMAGE_ROOTFS}${sysconfdir}/environment
 }
