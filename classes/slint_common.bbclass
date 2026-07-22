@@ -1,16 +1,22 @@
 TARGET_CFLAGS:remove = "-fcanon-prefix-map"
 
+# scarthgap needs S at the git checkout; newer OE (whinlatter/wrynose) sets it
+# itself and hard-errors on the explicit assignment, so only set it on scarthgap.
+# Every slint_common consumer is a git-checkout recipe.
+python () {
+    if 'scarthgap' in (d.getVar('LAYERSERIES_CORENAMES') or '').split():
+        d.setVar('S', '${WORKDIR}/git')
+}
+
 # The Skia renderer builds Skia from source with GN + ninja (skia-bindings), and
 # not every BSP provides ninja-native (OpenSTLinux doesn't), so depend on it.
 DEPENDS:append:class-target = " ninja-native"
 
-# skia-bindings also runs bindgen, which dlopens libclang.so to generate the Rust
-# bindings for Skia's headers. Provide the native libclang and point bindgen at
-# it via LIBCLANG_PATH; the target headers are still parsed cross, through the
-# --target/--sysroot in BINDGEN_EXTRA_CLANG_ARGS below. (meta-rust-bin used to
-# make this discoverable; oe-core's cargo does not.)
-DEPENDS:append:class-target = " clang-native"
-export LIBCLANG_PATH = "${STAGING_LIBDIR_NATIVE}"
+# oe-core's rust classes remap ${WORKDIR} out of the debug paths rustc bakes in
+# (rust-common's RUST_DEBUG_REMAP); meta-rust-bin's cargo_bin does not, so the
+# absolute ${WORKDIR}/sources/cargo_home crate paths end up in the binaries and
+# trip the buildpaths QA check. Apply the same remap rustc-side.
+RUSTFLAGS += "--remap-path-prefix=${WORKDIR}=${TARGET_DBGSRC_DIR}"
 
 do_compile:prepend() {
     #export RUSTFLAGS="${RUSTFLAGS}"
@@ -19,24 +25,6 @@ do_compile:prepend() {
     # passes the right flags, in particular float abi selection
     export BINDGEN_EXTRA_CLANG_ARGS="${HOST_CC_ARCH} ${TOOLCHAIN_OPTIONS} ${TARGET_CFLAGS}"
 }
-
-# The skia-bindings crate compiles its src/bindings.cpp with the cargo cc-crate
-# wrapper, which embeds oe-core's DEBUG_PREFIX_MAP. That map only remaps ${S}, ${B}
-# and the sysroots — NOT ${WORKDIR}/sources/cargo_home, where the skia-bindings crate
-# and the bundled Skia headers live. So absolute __FILE__ paths (e.g. the bundled
-# .../skia/include/codec/SkEncodedOrigin.h) get baked into libslint_cpp.so's .rodata
-# and trip the buildpaths QA check. Extend the map to cover the whole ${WORKDIR} so
-# those cargo_home paths are remapped too. (Skia's own gn/ninja compile already emits
-# relative paths, so it isn't affected.)
-DEBUG_PREFIX_MAP:append:class-target = " -ffile-prefix-map=${WORKDIR}=/usr/src/debug/${PN}/${PV}"
-
-# The -src package (poky default PACKAGE_DEBUG_SPLIT_STYLE=debug-with-srcpkg) ships
-# debug sources, including build-script-generated files. The `built` crate used by
-# rav1e (pulled in via Skia's AVIF image support) writes a built.rs recording absolute
-# build paths (e.g. the rustc path) as string literals — these are not in any binary
-# (dead code, absent from libslint_cpp.so) but trip buildpaths QA on the source package.
-# Skip buildpaths for the -src package only; the binary packages keep full QA.
-INSANE_SKIP:${PN}-src += "buildpaths"
 
 # Emulate what clang-environment.inc does.
 

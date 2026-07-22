@@ -1,4 +1,4 @@
-inherit cargo
+inherit cargo_bin
 inherit pkgconfig
 
 # The launcher (demos/launcher) only exists on master; it is not in the release
@@ -46,12 +46,9 @@ CARGO_DISABLE_BITBAKE_VENDORING = "1"
 # enabling that feature makes Skia the default renderer, so no runtime override
 # is needed.
 CARGO_MANIFEST_PATH = "${S}/demos/Cargo.toml"
-CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=${CARGO_MANIFEST_PATH} --no-default-features -p launcher"
 
-# cargo.bbclass passes features only via PACKAGECONFIG_CONFARGS (empty here);
-# So append --features explicitly so machine-specific CARGO_FEATURES overrides take effect.
-CARGO_BUILD_FLAGS:append = " ${@'--features ' + ','.join(d.getVar('CARGO_FEATURES').split()) if d.getVar('CARGO_FEATURES') else ''}"
-
+# cargo_bin turns CARGO_FEATURES into --features on its own.
+EXTRA_CARGO_FLAGS = "--no-default-features -p launcher"
 CARGO_FEATURES = "backend-linuxkms renderer-skia"
 
 do_configure[network] = "1"
@@ -60,21 +57,15 @@ do_compile[network] = "1"
 do_compile:prepend() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
-    # Use the git protocol for the crates.io index instead of sparse HTTP
-    # so cargo doesn't open hundreds of HTTP/1.1 connections at once
-    # (OE-core's curl-native is built without HTTP/2).
-    export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
-    export CARGO_HTTP_TIMEOUT=120
-    export CARGO_NET_RETRY=5
     # Skia + LTO is very RAM-hungry; keep LTO off (as slint-demos does).
     export CARGO_PROFILE_RELEASE_LTO=false
 }
 do_compile:append() {
-    rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.so
-    rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.rlib
+    # cargo_bin_do_install ships every .so/.rlib next to the launcher binary; drop
+    # them so the package carries just the executable.
+    rm -f "${CARGO_BINDIR}"/*.so
+    rm -f "${CARGO_BINDIR}"/*.rlib
 }
-
-INSANE_SKIP:${PN} += "buildpaths"
 
 # The launcher is the boot entry point: autostart it, and it launches the demos.
 inherit systemd
@@ -85,5 +76,7 @@ FILES:${PN} += "${systemd_unitdir}/system/slint-launcher.service"
 
 do_install:append() {
     install -d ${D}${systemd_unitdir}/system
-    install -m 0644 ${WORKDIR}/slint-launcher.service ${D}${systemd_unitdir}/system
+    # COMPATIBLE_PACKDIR (from cargo_bin) is where file:// SRC_URI entries land:
+    # UNPACKDIR on walnascar+ (whinlatter/wrynose), WORKDIR on scarthgap.
+    install -m 0644 ${COMPATIBLE_PACKDIR}/slint-launcher.service ${D}${systemd_unitdir}/system
 }

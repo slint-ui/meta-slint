@@ -1,4 +1,4 @@
-inherit cargo
+inherit cargo_bin
 inherit pkgconfig
 
 # Pinned to a release (not master): the demos get reshuffled on master, e.g. the
@@ -29,17 +29,13 @@ DEPENDS:append:class-target = " \
 RDEPENDS:${PN}:class-target += "xkeyboard-config"
 
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
-CARGO_BUILD_FLAGS = "-v --target ${RUST_HOST_SYS} ${BUILD_MODE} --manifest-path=${CARGO_MANIFEST_PATH}"
-
-# cargo.bbclass passes features only via PACKAGECONFIG_CONFARGS (empty here);
-# So append --features explicitly so machine-specific CARGO_FEATURES overrides take effect.
-CARGO_BUILD_FLAGS:append = " ${@'--features ' + ','.join(d.getVar('CARGO_FEATURES').split()) if d.getVar('CARGO_FEATURES') else ''}"
 
 # Build only the demo binaries. A bare `cargo build` compiles the whole default
 # workspace -- including slint-viewer (which has its own recipe) and other tools
 # -- which is slow and made slint-demos ship /usr/bin/slint-viewer, clashing with
 # the slint-viewer package at rootfs time. Scope the build with one -p per demo.
-CARGO_BUILD_FLAGS:append = " ${@' '.join('-p ' + p for p in (d.getVar('SLINT_DEMOS') or '').split())}"
+# cargo_bin turns CARGO_FEATURES into --features on its own.
+EXTRA_CARGO_FLAGS = "${@' '.join('-p ' + p for p in (d.getVar('SLINT_DEMOS') or '').split())}"
 
 do_configure[network] = "1"
 do_compile[network] = "1"
@@ -54,18 +50,22 @@ SLINT_DEMOS = "slide_puzzle printerdemo gallery opengl_texture opengl_underlay e
 do_compile:prepend() {
     CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
     export CURL_CA_BUNDLE
-    # Use the git protocol for the crates.io index instead of sparse HTTP
-    # so cargo doesn't open hundreds of HTTP/1.1 connections at once
-    # (OE-core's curl-native is built without HTTP/2 -- see commit message).
-    export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
-    export CARGO_HTTP_TIMEOUT=120
-    export CARGO_NET_RETRY=5
     # Skia + LTO is very RAM-hungry; keep LTO off.
     export CARGO_PROFILE_RELEASE_LTO=false
 }
 do_compile:append() {
-    rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.so
-    rm -f "${B}/target/${CARGO_TARGET_SUBDIR}"/*.rlib
+    # cargo_bin_do_install ships every .so/.rlib next to the demo binaries; drop
+    # them so the demos package carries just the executables.
+    rm -f "${CARGO_BINDIR}"/*.so
+    rm -f "${CARGO_BINDIR}"/*.rlib
 }
 
+# The demo binaries carry absolute build paths that the Rust --remap-path-prefix
+# cannot rewrite: the slint compiler bakes the gettext translation dir
+# (examples/*/lang) in as a string literal, and the vendored aws-lc-sys C crate
+# bakes its source paths into debug info. These are example binaries, so accept
+# the paths rather than chase every embedder. (slint-cpp/viewer/launcher are fully
+# remapped and keep the check.)
 INSANE_SKIP:${PN} += "buildpaths"
+INSANE_SKIP:${PN}-dbg += "buildpaths"
+INSANE_SKIP:${PN}-src += "buildpaths"
