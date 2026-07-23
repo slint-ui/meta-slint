@@ -27,6 +27,12 @@ jobs:
   prepare_env:
     runs-on: ubuntu-latest
     name: Create new Hetzner Cloud instance for build
+    env:
+      # Numeric ID of the shared Hetzner sstate Volume. Not a secret -- it's just
+      # a resource id (access is gated by HETZNER_API_KEY), and keeping it a repo
+      # variable lets us update it when the Volume is recreated without a code
+      # change, and keeps it readable in logs (it also forms the mount path).
+      HETZNER_SSTATE_VOLUME_ID: ${{ vars.HETZNER_SSTATE_VOLUME_ID }}
     outputs:
       label: ${{ steps.create-runner.outputs.label }}
       server_id: ${{ steps.create-runner.outputs.server_id }}
@@ -38,7 +44,7 @@ jobs:
           # A deleted Hetzner server detaches its volume asynchronously, after the
           # previous build's delete-runner job returned. Wait until the shared
           # sstate volume is free, else this build fails to attach it.
-          vol=106201634
+          vol="${HETZNER_SSTATE_VOLUME_ID}"
           for i in $(seq 1 60); do
             server=$(curl -fsSL -H "Authorization: Bearer $HCLOUD_TOKEN" \
               "https://api.hetzner.cloud/v1/volumes/$vol" | jq -r '.volume.server // "null"')
@@ -59,7 +65,7 @@ jobs:
           # (nbg1) to attach it. The action mounts it at /mnt/HC_Volume_<id>.
           server_type: cx53
           location: nbg1
-          volume: "106201634"
+          volume: "${{ vars.HETZNER_SSTATE_VOLUME_ID }}"
 
   build:
     runs-on: ${{ needs.prepare_env.outputs.label }}
@@ -69,6 +75,8 @@ jobs:
       contents: write
     # A from-scratch vendor BSP build runs past GitHub's default 6h limit.
     timeout-minutes: 600
+    env:
+      HETZNER_SSTATE_VOLUME_ID: ${{ vars.HETZNER_SSTATE_VOLUME_ID }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -101,8 +109,8 @@ jobs:
           # Volume attaches to only one server at a time, so if another build holds
           # it the mount fails -- fail hard rather than silently building cold on
           # the ephemeral disk (which could also race the shared cache).
-          SSTATE_VOL=/dev/disk/by-id/scsi-0HC_Volume_106201634
-          SSTATE_MNT=/mnt/HC_Volume_106201634
+          SSTATE_VOL=/dev/disk/by-id/scsi-0HC_Volume_${HETZNER_SSTATE_VOLUME_ID}
+          SSTATE_MNT=/mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID}
           if [ ! -b "$SSTATE_VOL" ]; then
             echo "::error::sstate volume $SSTATE_VOL is not attached -- another build is likely holding it; failing."
             lsblk; exit 1
@@ -139,8 +147,8 @@ jobs:
         if: ${{ inputs.wipe_sstate }}
         run: |
           set +e
-          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
-          mountpoint -q /mnt/HC_Volume_106201634 || { echo "Volume not mounted"; exit 0; }
+          SSTATE_DIR=/mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID}/sstate-cache
+          mountpoint -q /mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID} || { echo "Volume not mounted"; exit 0; }
           echo "Wiping the sstate Volume for a clean baseline (objects + hash-equiv DB)"
           sudo find "$SSTATE_DIR" -mindepth 1 -delete 2>/dev/null || true
           echo "Volume after wipe: $(df -h "$SSTATE_DIR" | awk 'NR==2 {print $4" free of "$2}')"
@@ -153,8 +161,8 @@ jobs:
           SSTATE_VOL_MIN_FREE_PCT: "25"
         run: |
           set +e +o pipefail
-          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
-          mountpoint -q /mnt/HC_Volume_106201634 || { echo "Volume not mounted"; exit 0; }
+          SSTATE_DIR=/mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID}/sstate-cache
+          mountpoint -q /mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID} || { echo "Volume not mounted"; exit 0; }
           read -r total_kb avail_kb < <(df -P "$SSTATE_DIR" | awk 'NR==2 {print $2, $4}')
           target_kb=$(( total_kb * SSTATE_VOL_MIN_FREE_PCT / 100 ))
           if [ "$avail_kb" -lt "$target_kb" ]; then
@@ -173,7 +181,7 @@ jobs:
           # sstate lives directly on the shared Volume: bitbake restores from and
           # writes to it in place (the model main uses, where restore works). The
           # step above guarantees headroom so a cold build can't fill it mid-way.
-          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
+          SSTATE_DIR=/mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID}/sstate-cache
           # Per-device build tree, so a reused runner never mixes two devices.
           WORK_ROOT=${{ runner.workspace }}/build-${{ inputs.device }}
           echo "sstate objects before build: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
@@ -239,8 +247,8 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          SSTATE_DIR=/mnt/HC_Volume_106201634/sstate-cache
-          mountpoint -q /mnt/HC_Volume_106201634 || exit 0
+          SSTATE_DIR=/mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID}/sstate-cache
+          mountpoint -q /mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID} || exit 0
           sudo find "$SSTATE_DIR" -type f -name 'sstate:slint*' -delete
           sudo find "$SSTATE_DIR" -mindepth 1 -type d -empty -delete 2>/dev/null || true
           echo "Volume sstate objects: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l) (free: $(df -h "$SSTATE_DIR" | awk 'NR==2 {print $4}'))"
