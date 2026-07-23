@@ -54,13 +54,20 @@ slint_demo_build_ti() {
         echo "::error::TI oe-layersetup did not set up the build environment (bitbake not on PATH)"; exit 1
     fi
 
-    # Add meta-clang and meta-slint on top of the TI layers. meta-slint on this
-    # (wrynose) branch builds Rust via oe-core's cargo, so no meta-rust-bin.
+    # Add meta-clang, meta-rust-bin and meta-slint on top of the TI layers.
     local layers="$setup/sources"
     local meta_clang_dir="$layers/meta-clang"
     if ! bitbake-layers show-layers 2>/dev/null | grep -Fq "/meta-clang"; then
         [ -d "$meta_clang_dir" ] || git clone -b "$meta_clang_branch" https://github.com/kraj/meta-clang.git "$meta_clang_dir"
         bitbake-layers add-layer "$meta_clang_dir"
+    fi
+    # meta-slint builds its Rust recipes with meta-rust-bin's cargo_bin class, so
+    # it LAYERDEPENDS on rust-bin-layer -- add meta-rust-bin before meta-slint.
+    # (meta-rust-bin tracks master; no per-release branches.)
+    local meta_rust_bin_dir="$layers/meta-rust-bin"
+    if ! bitbake-layers show-layers 2>/dev/null | grep -Fq "/meta-rust-bin"; then
+        [ -d "$meta_rust_bin_dir" ] || git clone https://github.com/rust-embedded/meta-rust-bin.git "$meta_rust_bin_dir"
+        bitbake-layers add-layer "$meta_rust_bin_dir"
     fi
     slint_demo_add_layer_if_missing "$meta_slint_dir"
 
