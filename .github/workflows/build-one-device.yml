@@ -61,10 +61,13 @@ jobs:
           mode: create
           github_token: ${{ secrets.GH_API_KEY }}
           hcloud_token: ${{ secrets.HETZNER_API_KEY }}
-          # 32G RAM / 320G disk; must be created in the sstate volume's location
-          # (nbg1) to attach it. The action mounts it at /mnt/HC_Volume_<id>.
-          server_type: cx53
-          location: nbg1
+          # Must be created in the sstate Volume's location to attach it, with a
+          # server type big enough for the build (>=32G RAM). Both are repo
+          # variables (like the Volume ID) so the Volume can be moved, or the type
+          # switched, without editing this file. The action mounts it at
+          # /mnt/HC_Volume_<id>.
+          server_type: ${{ vars.HETZNER_SERVER_TYPE }}
+          location: ${{ vars.HETZNER_LOCATION }}
           volume: "${{ vars.HETZNER_SSTATE_VOLUME_ID }}"
 
   build:
