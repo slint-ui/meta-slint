@@ -2,19 +2,13 @@
 
 set -ex
 
-branch=$1
-shift
-
-for dir in poky meta-openembedded meta-clang; do
-    pushd $dir
-    git status
-    git checkout -f $branch
-    popd
-done
-
-cd poky
-. oe-init-build-env
+cd bitbake-builds/poky-wrynose
+. build/init-build-env
 bitbake-layers show-layers
 bitbake -c compile slint-hello-world
 bitbake -c compile slint-demos
-bitbake core-image-minimal -c populate_sdk
+# Disabled: populate_sdk pushes the total run time past GitHub Actions' 6h job
+# timeout. The hello-world + demos compiles together already exercise slint-cpp
+# and the cargo plumbing; re-enable once we've sped things up (less conservative
+# BB_NUMBER_THREADS / CARGO_BUILD_JOBS, or a higher timeout-minutes).
+#bitbake core-image-minimal -c populate_sdk

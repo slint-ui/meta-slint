@@ -33,8 +33,7 @@ slint_demo_ensure_git_identity() {
 }
 
 # Append the config shared across every demo-image device to conf/local.conf:
-# the Slint feature set and disk-space conservation. No public sstate mirror --
-# vendor BSPs don't publish one, so everything builds locally.
+# the Slint feature set and disk-space conservation.
 slint_demo_configure_local_conf() {
     local conf="$1"
     cat >> "$conf" <<'EOF'
@@ -47,6 +46,9 @@ CLANGSDK = "1"
 # KMS/DRM framebuffer + Skia renderer, plus the system-testing harness.
 PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-testing"
 
+# The demo images don't ship an SBOM; skip SPDX generation.
+INHERIT:remove = "create-spdx"
+
 # --- Disk-space conservation ---
 
 # Delete each recipe's WORKDIR once built (biggest disk saver; deploy is kept).
@@ -58,22 +60,37 @@ BB_DISKMON_DIRS = "\
     STOPTASKS,${TMPDIR},2G,100K \
     STOPTASKS,${DL_DIR},2G,100K \
     STOPTASKS,${SSTATE_DIR},2G,100K \
-    ABORT,${TMPDIR},512M,1K \
-    ABORT,${DL_DIR},512M,1K \
-    ABORT,${SSTATE_DIR},512M,1K"
+    HALT,${TMPDIR},512M,1K \
+    HALT,${DL_DIR},512M,1K \
+    HALT,${SSTATE_DIR},512M,1K"
 
 # Resource caps for the Hetzner box (32G RAM). BB_NUMBER_THREADS is the OOM lever
 # (parallel recipes), so keep it low; PARALLEL_MAKE speeds up the clang-native
-# long pole; CARGO_BUILD_JOBS stays low (rustc/LTO of the slint graph is heavy).
+# long pole. CARGO_BUILD_JOBS bounds cargo/rustc and Skia's internal ninja (it
+# reads NUM_JOBS, which cargo derives from this); the Slint+Skia graph is the
+# long pole, so give it a few jobs. LTO is off in those recipes, which keeps the
+# peak RAM of the parallel Skia C++ compiles in check.
 BB_NUMBER_THREADS = "4"
 PARALLEL_MAKE = "-j 8"
-export CARGO_BUILD_JOBS = "2"
+export CARGO_BUILD_JOBS = "6"
 EOF
 
-    # Reuse a persistent sstate cache (e.g. a mounted Hetzner Volume) when provided.
+    # Reuse a persistent sstate cache (the shared Hetzner Volume) when provided.
     if [ -n "${SSTATE_DIR:-}" ]; then
         echo "SSTATE_DIR = \"$SSTATE_DIR\"" >> "$conf"
+        # Hash equivalence keys sstate by a unihash whose taskhash->unihash map
+        # lives in a database. Keep that database next to the shared sstate rather
+        # than in the ephemeral build dir (bitbake's default), so the mappings
+        # persist across builds -- otherwise every build computes fresh unihashes
+        # and nothing on the Volume matches, defeating sstate reuse entirely.
+        echo 'BB_HASHSERVE_DB_DIR = "${SSTATE_DIR}"' >> "$conf"
     fi
+
+    # No public sstate mirror: it can't be used together with our local hash
+    # equivalence server (unihashes don't line up with the mirror's), so bitbake
+    # warns and its mismatched restore probes surface as setscene errors -- and it
+    # never provided hits for this vendor-BSP config anyway. Our own Volume
+    # (SSTATE_DIR + a shared hashserv DB) is the sstate cache.
 }
 
 # Copy the given files into $ARTIFACT_DIR for a later workflow step to publish.
