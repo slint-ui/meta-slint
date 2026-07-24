@@ -121,3 +121,24 @@ Steps:
   - Add `meta-slint`
   - Run `bitbake imx-image-slint-demos` to build an image that ships various Slint demos in a minimal image. The demos run directly on the framebuffer with the LinuxKMS backend.
 
+## TI Sitara MPUs
+
+When building for TI's K3-generation Sitara MPUs (those with a display, e.g. the AM62x family) with TI's [meta-ti](https://git.yoctoproject.org/meta-ti) BSP
+(as delivered by the [Arago Processor SDK](https://git.ti.com/cgit/arago-project/oe-layersetup/),
+which layers `meta-ti-bsp` and `meta-arago` on top of OpenEmbedded), adding this `meta-slint`
+layer to your environment enables an additional `ti-image-slint-demos` image target.
+
+Steps:
+  - Add [meta-clang](https://github.com/kraj/meta-clang)
+  - Add [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)
+  - Add `meta-slint`
+  - Run `bitbake ti-image-slint-demos` to build an image that boots straight into the Slint demo
+    launcher — a menu that discovers and runs the installed demos — on the framebuffer with the
+    LinuxKMS backend.
+
+The image adapts to the board's graphics stack: on the AM62Px (`am62pxx-evm`, SK-AM62P-LP) the
+demos render on the Imagination GPU through the PowerVR driver, while on the GPU-less AM62L
+(`am62lxx-evm`, AM62L EVM) they render in software with Skia.
+
+(Tested on SK-AM62P-LP and the AM62L EVM)
+
