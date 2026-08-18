@@ -17,6 +17,7 @@ LICENSE = "GPL-3.0-only | Slint-Commercial"
 inherit slint_common
 inherit features_check
 
+REQUIRED_DISTRO_FEATURES:append = ""
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgles2"

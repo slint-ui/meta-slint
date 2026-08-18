@@ -17,6 +17,7 @@ inherit pkgconfig
 inherit slint_common
 inherit features_check
 
+REQUIRED_DISTRO_FEATURES:append = ""
 REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
 
 DEPENDS:append = " fontconfig"
