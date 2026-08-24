@@ -1,11 +1,11 @@
 #!/bin/bash
-# Build the Slint demo image for the Toradex Verdin iMX95. Just pins MACHINE, the board
+# Build the Slint demo image for the Toradex SMARC iMX8M Plus. Just pins MACHINE, the board
 # description and the GPU stack; see toradex-common.sh.
 set -euo pipefail
 
-MACHINE="${MACHINE:-verdin-imx95}"
-BOARD_DESC="${BOARD_DESC:-Toradex Verdin iMX95}"
-TDX_GPU="${TDX_GPU:-mali}"
+MACHINE="${MACHINE:-toradex-smarc-imx8mp}"
+BOARD_DESC="${BOARD_DESC:-Toradex SMARC iMX8M Plus}"
+TDX_GPU="${TDX_GPU:-vivante}"
 export MACHINE BOARD_DESC TDX_GPU
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

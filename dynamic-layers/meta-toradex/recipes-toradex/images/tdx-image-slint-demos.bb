@@ -51,6 +51,17 @@ CORE_IMAGE_EXTRA_INSTALL += " \
 # not apply to a mainline-BSP build, which renders via mesa/panfrost instead.)
 CORE_IMAGE_EXTRA_INSTALL:append:imxmali = " mali-imx-libegl mali-imx-libgles2"
 
+# The same for the Vivante parts (the i.MX8 modules: Verdin/SMARC iMX8M Plus and
+# Mini, Apalis iMX8, Colibri iMX8X). meta-freescale sets imxviv for machines whose
+# GPU provider is imx-gpu-viv (IMXGPU_GRAPHICS_PROVIDER:imxviv). Note the package
+# names differ from Mali's: libegl-imx / libgles2-imx, not <pn>-libegl.
+#
+# These boards also need the wayland DISTRO_FEATURE, which the build script sets
+# -- imx-gpu-viv picks its backend with
+#   BACKEND = contains(DISTRO_FEATURES, "wayland", "wayland", "fb")
+# and only the wayland build ships the GBM/DRM EGL that linuxkms needs.
+CORE_IMAGE_EXTRA_INSTALL:append:imxviv = " libegl-imx libgles2-imx"
+
 # Emit the Toradex Easy Installer (TEZI) bundle -- the standard, guided flashing
 # path for Toradex modules: recovery mode + Easy Installer, which provisions the
 # on-module eMMC and places the boot container for you. teziimg is Toradex's own
