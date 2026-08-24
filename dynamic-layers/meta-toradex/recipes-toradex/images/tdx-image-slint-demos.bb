@@ -1,9 +1,15 @@
-# Slint demo image for Toradex Verdin SoMs (currently Verdin iMX95), booting
-# straight into the Slint launcher on KMS/DRM via Slint's linuxkms backend --
-# no Wayland/X11 compositor, no multimedia stack. A lean core-image plus our app
-# and the machine's GPU userspace (the same shape as the other demo images).
+# Slint demo image for Toradex SoMs, booting straight into the Slint launcher on
+# KMS/DRM via Slint's linuxkms backend -- no Wayland/X11 compositor, no multimedia
+# stack. A lean core-image plus our app and the machine's GPU userspace (the same
+# shape as the other demo images).
+#
+# The image itself is machine-independent; only the GPU userspace is machine
+# specific, and that is selected by override (below), so the i.MX95 modules
+# (Verdin, SMARC, Aquila) all work. Adding a board needs a build script setting
+# MACHINE and a workflow entry; boards on a different GPU stack (the Vivante i.MX8
+# modules, the TI-based ones) additionally need their own provider packages here.
 
-SUMMARY = "A minimal image with the Slint demos, running on Toradex Verdin via KMS/DRM (linuxkms)"
+SUMMARY = "A minimal image with the Slint demos, running on Toradex SoMs via KMS/DRM (linuxkms)"
 
 LICENSE = "MIT"
 
@@ -31,19 +37,25 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     libnss-mdns \
 "
 
-# The i.MX95 has an Arm Mali GPU. Slint's Skia renderer dlopens EGL/GLES (no ELF
-# NEEDED entry), so shlib-deps can't discover them -- and the generic
-# libegl/libgles2 RPROVIDES that meta-freescale's Mali recipes emit resolve for
-# the package manager but not in bitbake's provider map ("Nothing RPROVIDES
-# libegl"), so name the machine's Mali provider packages directly.
-CORE_IMAGE_EXTRA_INSTALL:append:verdin-imx95 = " mali-imx-libegl mali-imx-libgles2"
+# GPU userspace. Slint's Skia renderer dlopens EGL/GLES (no ELF NEEDED entry), so
+# shlib-deps can't discover them -- and the generic libegl/libgles2 RPROVIDES that
+# meta-freescale's GPU recipes emit resolve for the package manager but not in
+# bitbake's provider map ("Nothing RPROVIDES libegl"), so name the machine's
+# provider packages directly.
+#
+# Key this on the imxmali override rather than a machine name: meta-freescale adds
+# it to MACHINEOVERRIDES for i.MX machines whose GPU provider is mali-imx (see
+# IMXGPU_GRAPHICS_PROVIDER:imxmali in imx-base.inc), i.e. the i.MX95 parts on the
+# NXP BSP. That covers every Toradex i.MX95 module -- Verdin, SMARC, Aquila -- and
+# any future Mali-based i.MX, without listing machines here. (It deliberately does
+# not apply to a mainline-BSP build, which renders via mesa/panfrost instead.)
+CORE_IMAGE_EXTRA_INSTALL:append:imxmali = " mali-imx-libegl mali-imx-libgles2"
 
 # Emit the Toradex Easy Installer (TEZI) bundle -- the standard, guided flashing
-# path for Verdin modules: recovery mode + Easy Installer, which provisions the
+# path for Toradex modules: recovery mode + Easy Installer, which provisions the
 # on-module eMMC and places the boot container for you. teziimg is Toradex's own
 # image type (wired in via their layers for this machine), so a plain core-image
 # still emits a valid Easy Installer bundle. (Overriding this to "wic" would
-# suppress the TEZI output.) The build script publishes it two ways: a single zip
-# to extract onto a USB stick, and a flat set of release assets + image_list.json
-# so the demo-images release doubles as an Easy Installer network feed.
+# suppress the TEZI output.) The build script ships it as a single zip: extract it
+# onto a USB stick and Easy Installer offers it for install.
 IMAGE_FSTYPES = "teziimg"
