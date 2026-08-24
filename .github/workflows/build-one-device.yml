@@ -212,6 +212,19 @@ jobs:
             # README, shipped as one zip. -0 since the tarball is already gzipped.
             zip -j -0 "$PUB/${{ inputs.device }}-flash-bundle.zip" \
               ./*-flash-bundle.tar.gz ./*-flash-bundle-README.txt
+          elif [ "${{ inputs.device }}" = "verdin-imx95" ]; then
+            # Toradex Easy Installer: the build script already produced a single
+            # zip of the TEZI bundle (README inside). Publish just that -- one
+            # asset, like the other boards. Copy only the zip, never the whole
+            # artifact dir: the bundle's own files have generic vendor names
+            # (README.txt, prepare.sh, marketing.tar, ...) and would both clutter
+            # the shared release and risk colliding with other boards' assets.
+            shopt -s nullglob
+            zips=("$ART"/*-easy-installer.zip)
+            if [ "${#zips[@]}" -eq 0 ]; then
+              echo "::error::no Easy Installer zip found to publish"; ls -l "$ART"; exit 1
+            fi
+            cp "${zips[@]}" "$PUB/"
           else
             # Raspberry Pi: raw .img + README, deflated (the mostly-empty image
             # shrinks a lot). A multi-file zip may need extracting before flashing.

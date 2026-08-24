@@ -42,6 +42,10 @@ on:
         description: "Build the PHYTEC phyBOARD-Polis i.MX 8M Mini image"
         type: boolean
         default: false
+      verdin-imx95:
+        description: "Build the Toradex Verdin iMX95 image"
+        type: boolean
+        default: false
       publish_to_release:
         description: "Upload the built image(s) to the demo-images release (untick to keep them as workflow artifacts only)"
         type: boolean
@@ -77,6 +81,7 @@ jobs:
           [ "${{ inputs.am62px }}" = "true" ]    && devices+=('"am62px"')
           [ "${{ inputs.am62l }}" = "true" ]     && devices+=('"am62l"')
           [ "${{ inputs['phyboard-polis'] }}" = "true" ] && devices+=('"phyboard-polis"')
+          [ "${{ inputs['verdin-imx95'] }}" = "true" ] && devices+=('"verdin-imx95"')
           if [ "${#devices[@]}" -eq 0 ]; then
             echo "::error::Select at least one board to build."; exit 1
           fi
