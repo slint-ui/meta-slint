@@ -1,0 +1,50 @@
+name: Demo Images Overview
+
+# Regenerate the description of the rolling "demo-images" release: one table per
+# vendor listing the boards, with links to the published assets.
+#
+# The page is built from the board metadata in scripts/demo-images/boards.json
+# plus the release's asset list read from the API -- the assets themselves are
+# never downloaded (they total several GB), so this runs in seconds.
+#
+# Runs on demand, and automatically after a Demo Images build finishes so the
+# page follows whatever was just published. (The workflow_run trigger only fires
+# for the copy of this file on the default branch.)
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Demo Images"]
+    types: [completed]
+
+# Only one update at a time, and let a newer run supersede a queued one -- they
+# would produce the same page anyway.
+concurrency:
+  group: demo-images-overview
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    name: Update the demo-images release description
+    permissions:
+      contents: write      # editing the release
+    steps:
+      - uses: actions/checkout@v4
+      - name: "render the overview page"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Asset list straight from the API -- no downloads.
+          gh api "repos/${{ github.repository }}/releases/tags/demo-images" \
+            > release.json
+          python3 scripts/demo-images/render-release-overview.py \
+            < release.json > notes.md
+          echo "Generated release description:"; echo; cat notes.md
+      - name: "update the release description"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit demo-images --repo "${{ github.repository }}" \
+            --notes-file notes.md
+          echo "Updated: https://github.com/${{ github.repository }}/releases/tag/demo-images"

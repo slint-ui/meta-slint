@@ -1,0 +1,61 @@
+{
+  "_comment": [
+    "Board metadata for the demo-images release overview page (see",
+    "render-release-overview.py and .github/workflows/demo-images-overview.yml).",
+    "Adding a board means: a build script, a demo-images.yml input, and an entry",
+    "here. The release assets are matched by the '<device>-' filename prefix, so",
+    "no asset name is stored -- only boards with a published asset are listed."
+  ],
+  "vendors": [
+    {
+      "name": "Toradex",
+      "flashing": "Extract the zip onto a USB stick, put the module into recovery mode and start the [Toradex Easy Installer](https://developer.toradex.com/easy-installer/toradex-easy-installer/), then select the image to install it to the on-module eMMC.",
+      "boards": [
+        { "device": "verdin-imx95", "name": "Verdin iMX95", "soc": "i.MX95", "gpu": "Arm Mali" },
+        { "device": "verdin-imx8mp", "name": "Verdin iMX8M Plus", "soc": "i.MX8M Plus", "gpu": "Vivante" },
+        { "device": "verdin-imx8mm", "name": "Verdin iMX8M Mini", "soc": "i.MX8M Mini", "gpu": "Vivante" },
+        { "device": "toradex-smarc-imx8mp", "name": "SMARC iMX8M Plus", "soc": "i.MX8M Plus", "gpu": "Vivante" },
+        { "device": "apalis-imx8", "name": "Apalis iMX8", "soc": "i.MX8QM", "gpu": "Vivante" },
+        { "device": "colibri-imx8x", "name": "Colibri iMX8X", "soc": "i.MX8QXP", "gpu": "Vivante" }
+      ]
+    },
+    {
+      "name": "Texas Instruments",
+      "flashing": "Unzip and write the `.img` to an SD card (`dd`, balenaEtcher or Raspberry Pi Imager), set the board to SD-card boot and power on.",
+      "boards": [
+        { "device": "am62px", "name": "SK-AM62P-LP", "soc": "AM62Px", "gpu": "PowerVR" },
+        { "device": "am62l", "name": "AM62L EVM (TMDS62LEVM)", "soc": "AM62L", "gpu": "none (software rendering)" }
+      ]
+    },
+    {
+      "name": "PHYTEC",
+      "flashing": "Unzip and write the `.img` to an SD card (`dd`, balenaEtcher or Raspberry Pi Imager), set the board to SD-card boot and power on.",
+      "boards": [
+        { "device": "phyboard-polis", "name": "phyBOARD-Polis", "soc": "i.MX8M Mini", "gpu": "Vivante" }
+      ]
+    },
+    {
+      "name": "NXP",
+      "flashing": "Flash the `.wic.zst` to an SD card with `bmaptool`, or program the eMMC over USB with [uuu](https://github.com/nxp-imx/mfgtools). The bundle includes the boot binary and a README with the exact steps.",
+      "boards": [
+        { "device": "imx95-evk", "name": "i.MX95 EVK (19x19 LPDDR5)", "soc": "i.MX95", "gpu": "Arm Mali" }
+      ]
+    },
+    {
+      "name": "STMicroelectronics",
+      "flashing": "Flash with [STM32CubeProgrammer](https://www.st.com/en/development-tools/stm32cubeprog.html); the bundle contains the flash layout and a README with the exact steps.",
+      "boards": [
+        { "device": "stm32mp1", "name": "STM32MP15 (DK1 / DK2 / EV1)", "soc": "STM32MP15", "gpu": "Vivante" },
+        { "device": "stm32mp2", "name": "STM32MP25 (e.g. STM32MP257F-DK)", "soc": "STM32MP25", "gpu": "Vivante" }
+      ]
+    },
+    {
+      "name": "Raspberry Pi",
+      "flashing": "Unzip and write the `.img` to an SD card with the [Raspberry Pi Imager](https://www.raspberrypi.com/software/) (\"Use custom\") or `dd`.",
+      "boards": [
+        { "device": "rpi4", "name": "Raspberry Pi 4", "soc": "BCM2711", "gpu": "Broadcom VideoCore (Mesa V3D)" },
+        { "device": "rpi5", "name": "Raspberry Pi 5", "soc": "BCM2712", "gpu": "Broadcom VideoCore (Mesa V3D)" }
+      ]
+    }
+  ]
+}
