@@ -180,6 +180,12 @@ jobs:
           fi
           echo "Volume: $(df -h "$SSTATE_DIR" | awk 'NR==2 {print $4" free of "$2}')"
       - name: "build ${{ inputs.device }} demo image"
+        env:
+          # Download URL for the RZ/G3E proprietary graphics package, which
+          # Renesas only hands out under licence, so it comes from an internal
+          # mirror. Actions masks the value in logs; the build script also never
+          # prints it.
+          RZG3E_GRAPHICS_URL: ${{ secrets.NEXTCLOUD_URL_RZG3E_BSP_GRAPHICS }}
         run: |
           # sstate lives directly on the shared Volume: bitbake restores from and
           # writes to it in place (the model main uses, where restore works). The
@@ -187,14 +193,29 @@ jobs:
           SSTATE_DIR=/mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID}/sstate-cache
           # Per-device build tree, so a reused runner never mixes two devices.
           WORK_ROOT=${{ runner.workspace }}/build-${{ inputs.device }}
+          # Hand any secret URL to the build user through a private file rather
+          # than the su command line, which would expose it in the process list.
+          SECRET_URL_FILE=/home/build/.demo-image-url
+          sudo rm -f "$SECRET_URL_FILE"
+          if [ -n "${RZG3E_GRAPHICS_URL:-}" ]; then
+            printf '%s' "$RZG3E_GRAPHICS_URL" | sudo tee "$SECRET_URL_FILE" >/dev/null
+            sudo chown build:build "$SECRET_URL_FILE"
+            sudo chmod 600 "$SECRET_URL_FILE"
+          fi
           echo "sstate objects before build: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
+          set +e
           su - build -c "cd ${{ runner.workspace }}/meta-slint && \
             WORK_ROOT='${WORK_ROOT}' \
             ARTIFACT_DIR='${WORK_ROOT}/artifacts' \
             ARTIFACT_BASENAME='${{ inputs.device }}-slint-demo' \
             SSTATE_DIR='${SSTATE_DIR}' \
+            RZG3E_GRAPHICS_URL_FILE='${SECRET_URL_FILE}' \
             meta-slint/scripts/demo-images/${{ inputs.device }}.sh"
+          build_rc=$?
+          set -e
+          sudo rm -f "$SECRET_URL_FILE"
           echo "sstate objects after build: $(find "$SSTATE_DIR" -name '*.tar.zst' 2>/dev/null | wc -l)"
+          exit $build_rc
       - name: "package ${{ inputs.device }} image"
         run: |
           # Assemble the files to publish into publish/ so the upload steps are

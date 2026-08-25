@@ -1,6 +1,6 @@
 SUMMARY = "A very basic image with Slint demos running via KMS/DRM"
 
-IMAGE_FEATURES += "package-management ssh-server-dropbear hwcodecs"
+IMAGE_FEATURES += "package-management ssh-server-dropbear"
 
 LICENSE = "MIT"
 

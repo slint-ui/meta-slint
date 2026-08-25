@@ -50,6 +50,13 @@
       ]
     },
     {
+      "name": "Renesas",
+      "flashing": "Unzip and write the `.img` to an SD card (`dd`), set the board to SD-card boot and power on.",
+      "boards": [
+        { "device": "rzg3e", "name": "RZ/G3E SMARC EVK", "soc": "RZ/G3E", "gpu": "Arm Mali" }
+      ]
+    },
+    {
       "name": "Raspberry Pi",
       "flashing": "Unzip and write the `.img` to an SD card with the [Raspberry Pi Imager](https://www.raspberrypi.com/software/) (\"Use custom\") or `dd`.",
       "boards": [

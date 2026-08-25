@@ -66,6 +66,10 @@ on:
         description: "Build the Toradex Colibri iMX8X image"
         type: boolean
         default: false
+      rzg3e:
+        description: "Build the Renesas RZ/G3E SMARC EVK image"
+        type: boolean
+        default: false
       publish_to_release:
         description: "Upload the built image(s) to the demo-images release (untick to keep them as workflow artifacts only)"
         type: boolean
@@ -107,6 +111,7 @@ jobs:
           [ "${{ inputs['toradex-smarc-imx8mp'] }}" = "true" ] && devices+=('"toradex-smarc-imx8mp"')
           [ "${{ inputs['apalis-imx8'] }}" = "true" ] && devices+=('"apalis-imx8"')
           [ "${{ inputs['colibri-imx8x'] }}" = "true" ] && devices+=('"colibri-imx8x"')
+          [ "${{ inputs.rzg3e }}" = "true" ]     && devices+=('"rzg3e"')
           if [ "${#devices[@]}" -eq 0 ]; then
             echo "::error::Select at least one board to build."; exit 1
           fi
