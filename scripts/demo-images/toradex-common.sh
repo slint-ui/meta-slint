@@ -148,12 +148,66 @@ EOF
     echo "Easy Installer bundle: $TEZI_DIR"
     ls -l "$TEZI_DIR"
 
+    # --- Board-specific bundle tweaks (driven by the per-board wrappers) ---
+
+    # TDX_DROP_BOOTLOADER=1: remove the bootloader write from the bundle, so an
+    # install keeps whatever bootloader is already on the module. Used for the
+    # Verdin iMX95: the imx-boot of every released BSP (7.5.0/7.6.1/7.7.0
+    # verified) dies before console init on early V1.1B modules -- only the
+    # factory-installed bootloader boots them -- so writing our imx-boot would
+    # brick those boards. A Linux-only demo has no bootloader requirements of
+    # its own; the factory bootloader is fine. Revisit when a released BSP
+    # boots early V1.1B modules.
+    if [ "${TDX_DROP_BOOTLOADER:-0}" = "1" ]; then
+        echo "Dropping the bootloader write from image.json (TDX_DROP_BOOTLOADER=1)"
+        # Prints the payload filenames of the dropped blockdev, one per line.
+        DROPPED_BOOTFILES="$(python3 - "$TEZI_DIR/image.json" <<'PYEOF'
+import json, sys
+
+path = sys.argv[1]
+with open(path) as fp:
+    cfg = json.load(fp)
+dropped = [b for b in cfg.get("blockdevs", []) if b.get("name") == "mmcblk0boot0"]
+cfg["blockdevs"] = [b for b in cfg["blockdevs"] if b.get("name") != "mmcblk0boot0"]
+with open(path, "w") as fp:
+    json.dump(cfg, fp, indent=4)
+    fp.write("\n")
+for blockdev in dropped:
+    for raw in blockdev.get("content", {}).get("rawfiles", []):
+        print(raw["filename"])
+PYEOF
+)"
+        for f in $DROPPED_BOOTFILES; do
+            echo "Removing unreferenced bootloader payload: $f"
+            rm -f "$TEZI_DIR/$f"
+        done
+    fi
+
+    # TDX_FDT_BOARD: carrier-board selection for the seeded U-Boot environment.
+    # U-Boot assembles the DTB name at boot from fdt_board (default: dev, the
+    # Verdin Development Board); carriers are not runtime-detectable.
+    if [ -n "${TDX_FDT_BOARD:-}" ]; then
+        echo "Setting fdt_board=${TDX_FDT_BOARD} in the seeded U-Boot environment"
+        sed -i "s/^fdt_board=.*/fdt_board=${TDX_FDT_BOARD}/" "$TEZI_DIR"/u-boot-initial-env*
+        grep -H "^fdt_board=" "$TEZI_DIR"/u-boot-initial-env*
+    fi
+
     mkdir -p "$ARTIFACT_DIR"
 
     # README, bundled inside the zip alongside the Easy Installer files (so the
     # release carries a single self-describing asset).
     TITLE="Slint demo image for the $board_desc"
     RULE="${TITLE//?/=}"
+
+    CARRIER_NOTE=""
+    if [ -n "${TDX_FDT_BOARD:-}" ]; then
+        CARRIER_NOTE="
+The image is set up for the '${TDX_FDT_BOARD}' carrier board. On a different
+carrier, set the matching device tree once from Linux with
+'fw_setenv fdt_board <carrier>' (or 'setenv fdt_board <carrier>; saveenv' in
+U-Boot) and reboot.
+"
+    fi
     cat > "$TEZI_DIR/README.txt" <<EOF
 $TITLE
 $RULE
@@ -173,7 +227,7 @@ Installing
 First boot
 ----------
 Connect a display and power on. The Slint demo starts automatically.
-
+${CARRIER_NOTE}
 Networking
 ----------
   * Wired Ethernet comes up automatically via DHCP.
