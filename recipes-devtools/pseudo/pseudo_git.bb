@@ -1,16 +1,23 @@
 require pseudo.inc
 
 # This recipe only exists to backport the pseudo openat2 fix (pseudo 1.9.8) onto
-# the NXP i.MX scarthgap BSP, which pins pseudo 1.9.0 and breaks do_package on
-# newer host kernels. Every other demo board builds on a newer OpenEmbedded
-# (wrynose), whose own oe-core pseudo already carries that fix -- and there this
-# override is not only redundant but fatal: `S = "${WORKDIR}/git"` below is a
-# hard error on newer bitbake (bitbake.conf sets S itself now). So restrict the
-# override to scarthgap; elsewhere defer to oe-core's pseudo.
+# the releases that pin a pseudo without it. Since the tar security update for
+# CVE-2025-45582, host tar resolves paths with openat2(), which pseudo 1.9.0 has
+# no wrapper for -- so under fakeroot its dirfds go untracked and *every*
+# do_package fails ("got *at() syscall for unknown directory").
+#
+# That pin is what both the i.MX scarthgap BSP and walnascar ship, so both need
+# the backport. Newer OpenEmbedded (whinlatter/wrynose) carries the fix in its
+# own oe-core pseudo, and there this override is not merely redundant but fatal:
+# `S = "${WORKDIR}/git"` below is a hard error on that bitbake. So skip it there
+# and defer to oe-core's pseudo.
+PSEUDO_HAS_OPENAT2_FIX = "whinlatter wrynose"
+
 python () {
-    if 'scarthgap' not in (d.getVar('LAYERSERIES_CORENAMES') or '').split():
+    releases = set((d.getVar('LAYERSERIES_CORENAMES') or '').split())
+    fixed = set((d.getVar('PSEUDO_HAS_OPENAT2_FIX') or '').split())
+    if releases & fixed:
         raise bb.parse.SkipRecipe(
-            'pseudo override only needed on the scarthgap i.MX BSP; '
             'oe-core pseudo already has the openat2 fix on this release')
 }
 

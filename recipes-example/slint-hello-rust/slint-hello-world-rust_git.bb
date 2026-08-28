@@ -14,12 +14,7 @@ DEPENDS:append = " fontconfig"
 # absolute cargo_home paths out of the binary (buildpaths QA).
 RUSTFLAGS += "--remap-path-prefix=${WORKDIR}=${TARGET_DBGSRC_DIR}"
 
-# scarthgap needs S at the git checkout; newer OE (whinlatter/wrynose) sets it
-# itself and rejects the explicit assignment, so only set it on scarthgap.
-python () {
-    if 'scarthgap' in (d.getVar('LAYERSERIES_CORENAMES') or '').split():
-        d.setVar('S', '${WORKDIR}/git')
-}
+inherit slint_git_source
 
 PV = "slint-hello-world-rust-${SRCPV}"
 

@@ -1,12 +1,7 @@
 TARGET_CFLAGS:remove = "-fcanon-prefix-map"
 
-# scarthgap needs S at the git checkout; newer OE (whinlatter/wrynose) sets it
-# itself and hard-errors on the explicit assignment, so only set it on scarthgap.
 # Every slint_common consumer is a git-checkout recipe.
-python () {
-    if 'scarthgap' in (d.getVar('LAYERSERIES_CORENAMES') or '').split():
-        d.setVar('S', '${WORKDIR}/git')
-}
+inherit slint_git_source
 
 # The Skia renderer builds Skia from source with GN + ninja (skia-bindings), and
 # not every BSP provides ninja-native (OpenSTLinux doesn't), so depend on it.
