@@ -1,0 +1,143 @@
+name: Update Slint version
+
+# Bump the layer to a new Slint release and open a pull request with the result.
+#
+# Run by hand after a Slint release is tagged (the "Ask Simon to create a new
+# release in meta-slint" step of the upstream release process). The work itself
+# lives in scripts/update-slint-version.py, so the same bump can be produced
+# locally with `scripts/update-slint-version.py 1.18.0` -- including the commit
+# message and the pull request body, which that script writes.
+#
+# Before the pull request is opened the change is put through
+# scripts/validate-slint-version.sh: every recipe is parsed, and the bumped
+# recipes are taken through do_patch and do_populate_lic, which proves the
+# gettext patches still apply and that LIC_FILES_CHKSUM matches upstream's
+# LICENSE.md. Nothing is compiled, so this takes minutes rather than hours --
+# run the CI workflow on the pull request branch for the real build.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Slint release to bump to, e.g. 1.18.0"
+        type: string
+        required: true
+      slint_rev:
+        description: "Tag, branch or SHA to pin (default: v<version>)"
+        type: string
+        required: false
+        default: ""
+      branch:
+        description: "Branch for SRC_URI (default: whatever the previous release used)"
+        type: string
+        required: false
+        default: ""
+      repin_launcher:
+        description: "Also move slint-launcher_git.bb onto this release (only if it carries demos/launcher)"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Update and validate, but do not push or open a pull request"
+        type: boolean
+        default: false
+
+# Two concurrent bumps would race on the same branch name and produce confusing
+# pull requests; queue them instead.
+concurrency:
+  group: update-slint-version
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    name: "Bump to Slint ${{ inputs.version }}"
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Same layout as ci.yml: the checkout sits in a subdirectory so the Yocto
+      # build directories can be created next to it.
+      - uses: actions/checkout@v4
+        with:
+          path: meta-slint
+
+      # First, because everything that can fail cheaply fails here in seconds:
+      # an unknown tag, a version that isn't newer, a patch that cannot be
+      # regenerated. The expensive setup below only runs once this has passed.
+      - name: "update the recipes"
+        working-directory: meta-slint
+        env:
+          VERSION: ${{ inputs.version }}
+          SLINT_REV: ${{ inputs.slint_rev }}
+          BRANCH: ${{ inputs.branch }}
+          REPIN_LAUNCHER: ${{ inputs.repin_launcher }}
+        run: |
+          args=()
+          [ -n "$SLINT_REV" ] && args+=(--rev "$SLINT_REV")
+          [ -n "$BRANCH" ] && args+=(--branch "$BRANCH")
+          [ "$REPIN_LAUNCHER" = "true" ] && args+=(--repin-launcher)
+          scripts/update-slint-version.py "$VERSION" \
+            --summary-json "$GITHUB_WORKSPACE/summary.json" \
+            --commit-message-file "$GITHUB_WORKSPACE/message.txt" \
+            --pr-body-file "$GITHUB_WORKSPACE/body.md" \
+            "${args[@]}"
+
+      - name: "commit"
+        working-directory: meta-slint
+        run: |
+          git config user.name "Slint CI"
+          git config user.email "ci@slint.dev"
+          git add -A
+          git commit -F "$GITHUB_WORKSPACE/message.txt"
+          git --no-pager show --stat
+
+      - name: "build environment setup"
+        run: |
+          # A Yocto setup plus the Slint git history needs more room than the
+          # runner image leaves free.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /usr/local/share/boost "${AGENT_TOOLSDIRECTORY:-/nonexistent}" || true
+          df -h /
+          sudo apt-get update
+          sudo apt-get install -y chrpath diffstat lz4 locales build-essential \
+            wget cpio file gawk zstd python3 python3-websockets
+          sudo locale-gen en_US.UTF-8
+          sudo update-locale
+          # bitbake's pseudo needs unprivileged user namespaces, which Ubuntu's
+          # apparmor profile restricts by default (same as ci.yml).
+          echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+
+      - name: "validate: parse recipes, apply patches, check licenses"
+        run: meta-slint/scripts/validate-slint-version.sh "${{ inputs.version }}"
+
+      - name: "push the branch"
+        if: ${{ !inputs.dry_run }}
+        working-directory: meta-slint
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          # The branch is owned by this workflow, so a re-run after a failed
+          # attempt replaces it rather than piling commits on top.
+          for attempt in 1 2 3 4; do
+            if git push --force origin "HEAD:refs/heads/update-slint-$VERSION"; then
+              exit 0
+            fi
+            [ "$attempt" -lt 4 ] && sleep $((2 ** attempt))
+          done
+          echo "::error::could not push update-slint-$VERSION"
+          exit 1
+
+      - name: "open the pull request"
+        if: ${{ !inputs.dry_run }}
+        working-directory: meta-slint
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if gh pr view "update-slint-$VERSION" --json number >/dev/null 2>&1; then
+            gh pr edit "update-slint-$VERSION" \
+              --title "Add $VERSION release" --body-file "$GITHUB_WORKSPACE/body.md"
+          else
+            gh pr create --head "update-slint-$VERSION" \
+              --title "Add $VERSION release" --body-file "$GITHUB_WORKSPACE/body.md"
+          fi
