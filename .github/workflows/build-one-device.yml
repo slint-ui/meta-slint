@@ -160,8 +160,13 @@ jobs:
         # ensure free headroom up front -- a fully cold build must not fill the
         # Volume mid-way (which halts it). Evict least-recently-accessed objects to
         # the target; LRU keeps the objects this build will actually restore.
+        #
+        # 25% was not enough: a build that rebuilds Slint cold writes ~11G of fresh
+        # sstate, and on a ~50G Volume that leaves the 12.5G target short of the 2G
+        # STOPTASKS floor in common.sh. The i.MX95 build for Slint 1.18 halted at
+        # task 8408 of 8610 that way. Half the Volume covers it with room to spare.
         env:
-          SSTATE_VOL_MIN_FREE_PCT: "25"
+          SSTATE_VOL_MIN_FREE_PCT: "50"
         run: |
           set +e +o pipefail
           SSTATE_DIR=/mnt/HC_Volume_${HETZNER_SSTATE_VOLUME_ID}/sstate-cache
