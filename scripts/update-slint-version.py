@@ -9,15 +9,19 @@ them carry:
   * recipes-example/slint-demos/slint-demos_<version>.bb  -- moved onto the release
 
 The patch is the interesting part. It does exactly one thing -- insert the
-GETTEXT_BLOCK below into the workspace Cargo.toml -- so it never needs a real
-rebase, only a new hunk once upstream's Cargo.toml context shifts. This script
-reuses the existing patch untouched when it still applies at exactly the line
-numbers it records *and* still carries exactly that block (which is what the
-1.17.1 bump did with the 1.17.0 patch); otherwise it writes a new
-0001-WIP-v-<version>-... file. A patch that only applies at an offset counts as
-stale: bitbake tolerates it, but it is one context change away from the fuzz
-that trips ERROR_QA. Existing patch files are never modified -- older releases
-reference them by name and must keep building.
+GETTEXT_BLOCK below into the manifest of every workspace the recipe builds from
+-- so it never needs a real rebase, only new hunks once upstream's manifests
+shift. Which manifests those are is resolved against the upstream tree rather
+than hard-coded, because upstream moves them: 1.18 split examples/ and demos/
+out of the root workspace, so from that release the slint-demos patch has to
+reach examples/Cargo.toml and demos/Cargo.toml instead of the root one. This
+script reuses the existing patch untouched when it still applies at exactly the
+line numbers it records *and* still carries exactly that block in exactly those
+manifests (which is what the 1.17.1 bump did with the 1.17.0 patch); otherwise
+it writes a new 0001-WIP-v-<version>-... file. A patch that only applies at an
+offset counts as stale: bitbake tolerates it, but it is one context change away
+from the fuzz that trips ERROR_QA. Existing patch files are never modified --
+older releases reference them by name and must keep building.
 
 Usage:
     scripts/update-slint-version.py 1.18.0
@@ -44,13 +48,20 @@ SLINT_URL = "https://github.com/slint-ui/slint.git"
 
 # The whole of what the gettext patch does. A regenerated patch is defined by
 # this, and a patch that inserts anything else is not reusable however cleanly
-# it applies -- see reusable_patch().
+# it applies -- see reusable_patch(). The blank line that separates it from
+# whatever follows is added at insertion time, not carried here, so that the
+# same block can also go at the end of the file.
 GETTEXT_BLOCK = (
     "[patch.crates-io]\n"
     'gettext-sys = { git = "https://github.com/slint-ui/gettext-rs", '
     'branch = "simon/fix-linux-detection" }\n'
-    "\n"
 )
+# Where the block goes. Upstream carried the workspace's [profile.release] in
+# Cargo.toml until 1.18, which moved it to .cargo/config.toml, so the anchor is
+# optional: without it the block goes at the end of the file. Either position is
+# valid TOML -- a table header ends the table before it, so nothing can fall
+# into [patch.crates-io] by accident -- and either way the hunk carries three
+# lines of real context.
 GETTEXT_ANCHOR = "\n[profile.release]\n"
 
 REPO = Path(__file__).resolve().parent.parent
@@ -60,23 +71,54 @@ LAUNCHER_RECIPE = REPO / "recipes-example" / "slint-launcher" / "slint-launcher_
 class Family:
     """One recipe family that pins a Slint revision.
 
+    workspaces names the upstream directories the family builds packages from,
+    "" being the repository root. A family with no workspaces carries no gettext
+    patch (slint-viewer builds nothing that links gettext).
+
     keeps_history is slint-cpp, which carries a recipe per release so
     PREFERRED_VERSION can select an older one; the others move onto the new
     release and leave nothing behind.
     """
 
-    def __init__(self, stem, directory, has_patch, keeps_history):
+    def __init__(self, stem, directory, workspaces, keeps_history):
         self.stem = stem
         self.directory = directory
-        self.patch_dir = directory / stem if has_patch else None
+        self.workspaces = workspaces
+        self.patch_dir = directory / stem if workspaces else None
         self.keeps_history = keeps_history
+
+    @property
+    def candidate_manifests(self):
+        return [w + "/Cargo.toml" if w else "Cargo.toml" for w in self.workspaces]
+
+    def manifests(self, workdir):
+        """The manifests this family's gettext patch has to reach, at this revision.
+
+        A [patch.crates-io] only takes effect in the manifest of the workspace
+        cargo is actually building, and upstream split examples/ and demos/ into
+        workspaces of their own in 1.18. Before that they were plain members of
+        the root workspace with no manifest to patch, so fall back to the root
+        one -- that keeps a bump working on either side of the split.
+        """
+        found = []
+        for manifest in self.candidate_manifests:
+            if not (workdir / manifest).is_file():
+                manifest = "Cargo.toml"
+            if manifest not in found:
+                found.append(manifest)
+        return found
 
 
 FAMILIES = [
-    Family("slint-cpp", REPO / "recipes-slint" / "slint", True, True),
-    Family("slint-viewer", REPO / "recipes-slint" / "slint-viewer", False, False),
-    Family("slint-demos", REPO / "recipes-example" / "slint-demos", True, False),
+    Family("slint-cpp", REPO / "recipes-slint" / "slint", ("",), True),
+    Family("slint-viewer", REPO / "recipes-slint" / "slint-viewer", (), False),
+    # The demo binaries this recipe builds are spread over both workspaces.
+    Family("slint-demos", REPO / "recipes-example" / "slint-demos", ("demos", "examples"), False),
 ]
+
+# Everything any family might have to patch, so one sparse checkout covers them
+# all. Missing paths are simply not checked out, which is what manifests() reads.
+ALL_MANIFESTS = sorted({m for f in FAMILIES for m in f.candidate_manifests} | {"Cargo.toml"})
 
 
 class Bump:
@@ -210,7 +252,7 @@ def resolve_rev(rev, branch):
 
 
 def fetch_upstream(sha, branch, workdir, check_branch=True):
-    """Materialise just Cargo.toml and LICENSE.md at sha.
+    """Materialise just the workspace manifests and LICENSE.md at sha.
 
     A blobless, depth-1 fetch plus a sparse checkout: a second or so and a couple
     of hundred kilobytes rather than a full clone of a repository this size. The
@@ -223,7 +265,10 @@ def fetch_upstream(sha, branch, workdir, check_branch=True):
     git(["fetch", "--quiet", "--depth=1", "--filter=blob:none", "origin", sha], cwd=workdir)
 
     git(["sparse-checkout", "init", "--no-cone"], cwd=workdir)
-    git(["sparse-checkout", "set", "/Cargo.toml", "/LICENSE.md"], cwd=workdir)
+    git(
+        ["sparse-checkout", "set", "/LICENSE.md"] + ["/" + m for m in ALL_MANIFESTS],
+        cwd=workdir,
+    )
     git(["checkout", "--quiet", sha], cwd=workdir)
 
     for name in ("Cargo.toml", "LICENSE.md"):
@@ -263,29 +308,43 @@ def has_path(path, workdir):
 
 
 def added_lines(patch_text):
-    """The text a patch inserts, with the leading '+' stripped."""
-    lines = [
-        line[1:]
-        for line in patch_text.splitlines()
-        if line.startswith("+") and not line.startswith("+++")
-    ]
-    return "\n".join(lines) + "\n" if lines else ""
+    """What a patch inserts, per file it touches, with the leading '+' stripped.
+
+    The blank line that goes with GETTEXT_BLOCK sits before or after it
+    depending on where the block landed, so surrounding blank lines are not part
+    of what a patch is compared on -- only the block itself is.
+    """
+    added = {}
+    current = None
+    for line in patch_text.splitlines():
+        if line.startswith("+++ b/"):
+            current = added.setdefault(line[len("+++ b/") :].strip(), [])
+        elif line.startswith("+") and current is not None:
+            current.append(line[1:])
+    return {name: "\n".join(lines).strip("\n") for name, lines in added.items()}
 
 
-def patched_cargo_toml(original, sha):
-    """Cargo.toml with the gettext block inserted."""
+def patched_cargo_toml(original, sha, manifest):
+    """A workspace manifest with the gettext block inserted -- see GETTEXT_ANCHOR."""
     if "[patch.crates-io]" in original:
         raise Failure(
-            "upstream Cargo.toml at {} already declares [patch.crates-io]; the "
-            "gettext patch would conflict. Resolve this by hand.".format(sha[:12])
+            "upstream {} at {} already declares [patch.crates-io]; the gettext "
+            "patch would conflict. Resolve this by hand.".format(manifest, sha[:12])
         )
-    if original.count(GETTEXT_ANCHOR) != 1:
+    anchors = original.count(GETTEXT_ANCHOR)
+    if anchors > 1:
         raise Failure(
-            "expected exactly one [profile.release] section in the upstream "
-            "Cargo.toml at {} to anchor the gettext patch to".format(sha[:12])
+            "found {} [profile.release] sections in the upstream {} at {}; "
+            "cannot tell which one to anchor the gettext patch to".format(
+                anchors, manifest, sha[:12]
+            )
         )
-    index = original.index(GETTEXT_ANCHOR) + 1
-    return original[:index] + GETTEXT_BLOCK + original[index:]
+    if anchors == 1:
+        index = original.index(GETTEXT_ANCHOR) + 1
+        return original[:index] + GETTEXT_BLOCK + "\n" + original[index:]
+    if not original.endswith("\n"):
+        original += "\n"
+    return original + "\n" + GETTEXT_BLOCK
 
 
 def patch_application(patch_path, workdir):
@@ -305,45 +364,51 @@ def patch_application(patch_path, workdir):
     return "offset" if "Hunk #" in result.stdout + result.stderr else "clean"
 
 
-def reusable_patch(previous_patch, workdir):
+def reusable_patch(previous_patch, workdir, manifests):
     """Whether the existing patch can be carried forward unchanged.
 
-    Applying cleanly is not enough: the hunk only breaks when upstream's
-    Cargo.toml context shifts, never when GETTEXT_BLOCK itself changes. Without
-    the content check, editing GETTEXT_BLOCK would silently have no effect for
-    however many releases it takes for the context to move.
+    Applying cleanly is not enough: the hunks only break when upstream's
+    manifest context shifts, never when GETTEXT_BLOCK itself changes or when a
+    workspace split moves the manifests that need it. Without this check,
+    editing GETTEXT_BLOCK would silently have no effect for however many
+    releases it takes for the context to move, and the release that split the
+    demos out of the root workspace would have kept patching the root manifest.
     """
-    if added_lines(previous_patch.read_text()) != GETTEXT_BLOCK:
+    wanted = {manifest: GETTEXT_BLOCK.strip("\n") for manifest in manifests}
+    if added_lines(previous_patch.read_text()) != wanted:
         return False
     return patch_application(previous_patch, workdir) == "clean"
 
 
-def regenerate_patch(previous_patch, workdir, sha):
+def regenerate_patch(previous_patch, workdir, sha, manifests):
     """A new patch file: the previous one's header, a freshly generated diff.
 
-    Keeping the header verbatim preserves the From/Subject/Upstream-Status lines
-    the layer has carried since 2023, so only the hunk actually changes.
+    The From/Subject/Upstream-Status lines are kept verbatim, so the patch keeps
+    the provenance the layer has carried since 2023. The diffstat is regenerated
+    along with the hunks, because a patch may now span more than one manifest.
     """
     previous = previous_patch.read_text()
-    marker = "\ndiff --git "
-    if marker not in previous:
-        raise Failure("no diff found in {}".format(previous_patch))
-    header = previous[: previous.index(marker) + 1]
+    separator = "\n---\n"
+    if separator not in previous:
+        raise Failure("no diffstat separator found in {}".format(previous_patch))
+    header = previous[: previous.index(separator)]
 
     # Yocto's patch-status QA check wants this; the older patches in the layer
     # predate it, so add it rather than silently inherit its absence.
     if "Upstream-Status:" not in header:
-        header = header.replace(
-            "\n---\n", "\nUpstream-Status: Inappropriate [embedded specific]\n\n---\n", 1
-        )
+        header += "\nUpstream-Status: Inappropriate [embedded specific]\n"
 
-    cargo = workdir / "Cargo.toml"
-    original = cargo.read_text()
+    originals = {name: (workdir / name).read_text() for name in manifests}
     try:
-        cargo.write_text(patched_cargo_toml(original, sha))
-        diff = git(["diff", "--", "Cargo.toml"], cwd=workdir).stdout
+        for name, original in originals.items():
+            (workdir / name).write_text(patched_cargo_toml(original, sha, name))
+        # --stat=72 is what git format-patch uses, so the diffstat looks like
+        # the one the patch carried before.
+        stat = git(["diff", "--stat=72", "--"] + manifests, cwd=workdir).stdout
+        diff = git(["diff", "--"] + manifests, cwd=workdir).stdout
     finally:
-        cargo.write_text(original)
+        for name, original in originals.items():
+            (workdir / name).write_text(original)
 
     # Drop the index line: the existing patches carry none, and a blob hash adds
     # noise that changes on every release without meaning anything.
@@ -353,15 +418,15 @@ def regenerate_patch(previous_patch, workdir, sha):
     if not diff.strip():
         raise Failure("generated an empty diff for the gettext patch")
 
-    return header + diff
+    return header + separator + stat + "\n" + diff
 
 
-def resolve_patch(previous_patch, version, workdir, sha):
+def resolve_patch(previous_patch, version, workdir, sha, manifests):
     """Return (patch_name, content_or_None); None means reuse the old file."""
     if not previous_patch.is_file():
         raise Failure("a recipe references a patch that does not exist: {}".format(previous_patch))
 
-    if reusable_patch(previous_patch, workdir):
+    if reusable_patch(previous_patch, workdir, manifests):
         return previous_patch.name, None
 
     new_patch = previous_patch.parent / patch_name_for(version)
@@ -370,7 +435,7 @@ def resolve_patch(previous_patch, version, workdir, sha):
             "{} needs regenerating but {} already exists; existing patch files "
             "are never modified".format(previous_patch.parent.name, new_patch)
         )
-    return new_patch.name, regenerate_patch(previous_patch, workdir, sha)
+    return new_patch.name, regenerate_patch(previous_patch, workdir, sha, manifests)
 
 
 # --------------------------------------------------------------------------
@@ -650,7 +715,11 @@ def main():
         for bump in plan:
             if bump.previous_patch:
                 bump.patch, bump.patch_content = resolve_patch(
-                    bump.previous_patch, args.version, workdir, sha
+                    bump.previous_patch,
+                    args.version,
+                    workdir,
+                    sha,
+                    bump.family.manifests(workdir),
                 )
 
         launcher_carries_launcher = has_path("demos/launcher", workdir)
