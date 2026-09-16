@@ -1,13 +1,12 @@
 inherit cargo_bin
 inherit pkgconfig
 
-# The launcher (demos/launcher) only exists on master; it is not in the release
-# the slint-demos recipe is pinned to (release/1, v1.17.1). Track it separately.
-# Pinned to the commit that merged slint-ui/slint#12530 (the launcher) into master.
-SLINT_REV = "7379c4a01579d6614b7d38b564f9430f4e78a960"
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=master;rev=${SLINT_REV}"
+# Pinned to the same revision as the slint-demos and slint-viewer recipes
+# (release/1, v1.18.0), which now carries demos/launcher.
+SLINT_REV = "bd20dab8529add087b5cbc81aec70bf30861ae4c"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
 SRC_URI += "file://slint-launcher.service"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=1fa63388f53bdc8a49fc4eef67b55c87"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eddf02df1cb330c56cc727e9e3a379c9"
 
 SUMMARY = "A launcher menu to discover and run the installed Slint demos"
 DESCRIPTION = "Builds the Slint demo launcher (demos/launcher): a menu that scans \
@@ -38,9 +37,9 @@ RDEPENDS:${PN}:class-target += "slint-demos slint-viewer"
 # Fetch crate dependencies straight from crates.io rather than pre-vendoring.
 CARGO_DISABLE_BITBAKE_VENDORING = "1"
 
-# On master the demos live in their own cargo workspace (demos/), separate from
-# the repo root -- so build the launcher package from that manifest, not the root
-# (a plain "-p launcher" from the root workspace doesn't resolve). The produced
+# The demos live in their own cargo workspace (demos/), separate from the repo
+# root -- so build the launcher package from that manifest, not the root (a plain
+# "-p launcher" from the root workspace doesn't resolve). The produced
 # binary is slint-demo-launcher. Build for the embedded target with the LinuxKMS
 # backend + libinput and no windowing default (--no-default-features drops
 # slint/default), and the Skia renderer (renderer-skia) to match the demos --
