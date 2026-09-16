@@ -13,10 +13,10 @@ matches the slint-demos recipe (linuxkms + skia)."
 HOMEPAGE = "https://slint.dev/"
 BUGTRACKER = "https://github.com/slint-ui/slint/issues"
 LICENSE = "GPL-3.0-only | Slint-Commercial"
-LIC_FILES_CHKSUM = "file://LICENSE.md;md5=1fa63388f53bdc8a49fc4eef67b55c87"
+LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eddf02df1cb330c56cc727e9e3a379c9"
 
-# v1.17.1 tag (same revision as slint-cpp_1.17.1)
-SLINT_REV = "cf62c975c311e7036d599ed8ed0b7e6a8386a934"
+# v1.18.0 tag (same revision as slint-cpp_1.18.0)
+SLINT_REV = "bd20dab8529add087b5cbc81aec70bf30861ae4c"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
 
 REQUIRED_DISTRO_FEATURES:append = ""
