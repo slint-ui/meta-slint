@@ -132,9 +132,16 @@ do_install () {
 do_install:append:class-native () {
 	chrpath ${D}${bindir}/pseudo -r `chrpath ${D}${bindir}/pseudo | cut -d = -f 2 | sed s/XORIGIN/\\$ORIGIN/`
 	install -d ${D}${sysconfdir}
+	# Where the file:// SRC_URI entries landed: UNPACKDIR on walnascar+, and
+	# WORKDIR on scarthgap, whose bitbake has no UNPACKDIR at all -- there it
+	# expands empty and the install quietly reaches for /fallback-passwd.
+	# cargo_bin's COMPATIBLE_PACKDIR settles this for the Rust recipes, but
+	# pseudo does not inherit it, so pick the directory here.
+	packdir="${UNPACKDIR}"
+	[ -n "$packdir" ] || packdir="${WORKDIR}"
 	# The fallback files should never be modified
-	install -m 444 ${UNPACKDIR}/fallback-passwd ${D}${sysconfdir}/passwd
-	install -m 444 ${UNPACKDIR}/fallback-group ${D}${sysconfdir}/group
+	install -m 444 "$packdir/fallback-passwd" ${D}${sysconfdir}/passwd
+	install -m 444 "$packdir/fallback-group" ${D}${sysconfdir}/group
 
 	# Two native/nativesdk entries below are the same
 	# If necessary install for the alternative machine arch.  This is only
