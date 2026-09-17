@@ -20,8 +20,12 @@ slint_demo_build_ti() {
     local meta_slint_dir="${META_SLINT_DIR:?set by the caller}"
     local oe_layersetup_url="${OE_LAYERSETUP_URL:-https://git.ti.com/git/arago-project/oe-layersetup.git}"
     local ti_oeconfig="${TI_OECONFIG:-configs/processor-sdk/processor-sdk-master-12.00.00.07.04-config.txt}"
-    # meta-clang tracks the same OE as the SDK; SDK 12 is on OE master.
-    local meta_clang_branch="${META_CLANG_BRANCH:-master}"
+    # meta-clang has to follow the OE the SDK pins, not OE master. master moved
+    # on to an oe.utils without all_multilib_tune_values, which the layer's own
+    # CLANGCROSSCANADIANDEPS still calls, so every TI build died while parsing
+    # packagegroup-cross-canadian. SDK 12 is on wrynose (see above), and
+    # meta-clang carries a branch for it, like every other board here pins one.
+    local meta_clang_branch="${META_CLANG_BRANCH:-wrynose}"
 
     local work_root="${WORK_ROOT:-$PWD}"
     export ARTIFACT_DIR="${ARTIFACT_DIR:-$work_root/artifacts}"
