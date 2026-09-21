@@ -17,7 +17,7 @@ diff --git a/demos/Cargo.toml b/demos/Cargo.toml
 @@ -32,3 +32,6 @@ license = "GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint
  repository = "https://github.com/slint-ui/slint"
  rust-version = "1.92"
- version = "1.18.0"
+ version = "1.18.1"
 +
 +[patch.crates-io]
 +gettext-sys = { git = "https://github.com/slint-ui/gettext-rs", branch = "simon/fix-linux-detection" }
