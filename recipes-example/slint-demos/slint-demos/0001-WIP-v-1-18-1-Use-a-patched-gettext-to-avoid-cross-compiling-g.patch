@@ -1,0 +1,33 @@
+From e8b15fcdfa595d0587f62f2340c632ca6b032c58 Mon Sep 17 00:00:00 2001
+From: Simon Hausmann <simon.hausmann@slint.dev>
+Date: Sun, 18 Jun 2023 11:35:07 +0200
+Subject: [PATCH] WIP: Use a patched gettext to avoid cross-compiling gettext
+ when building with Yocto
+
+Upstream-Status: Inappropriate [embedded specific]
+
+---
+ demos/Cargo.toml    | 3 +++
+ examples/Cargo.toml | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/demos/Cargo.toml b/demos/Cargo.toml
+--- a/demos/Cargo.toml
++++ b/demos/Cargo.toml
+@@ -32,3 +32,6 @@ license = "GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint
+ repository = "https://github.com/slint-ui/slint"
+ rust-version = "1.92"
+ version = "1.18.1"
++
++[patch.crates-io]
++gettext-sys = { git = "https://github.com/slint-ui/gettext-rs", branch = "simon/fix-linux-detection" }
+diff --git a/examples/Cargo.toml b/examples/Cargo.toml
+--- a/examples/Cargo.toml
++++ b/examples/Cargo.toml
+@@ -71,3 +71,6 @@ derive_more = { version = "2.0.0", default-features = false, features = ["deref"
+ glow = { version = "0.17" }
+ image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+ wgpu-30 = { package = "wgpu", version = "30", default-features = false }
++
++[patch.crates-io]
++gettext-sys = { git = "https://github.com/slint-ui/gettext-rs", branch = "simon/fix-linux-detection" }
