@@ -21,7 +21,10 @@ manifests (which is what the 1.17.1 bump did with the 1.17.0 patch); otherwise
 it writes a new 0001-WIP-v-<version>-... file. A patch that only applies at an
 offset counts as stale: bitbake tolerates it, but it is one context change away
 from the fuzz that trips ERROR_QA. Existing patch files are never modified --
-older releases reference them by name and must keep building.
+older releases reference them by name and must keep building. They are removed,
+though, when regenerating one leaves it with nothing referencing it: the moving
+families carry a single recipe, so the file the renamed recipe used to name is
+dead weight. slint-cpp keeps every patch, because it keeps every recipe.
 
 Usage:
     scripts/update-slint-version.py 1.18.0
@@ -144,6 +147,19 @@ class Bump:
     @property
     def patch_action(self):
         return "regenerated" if self.patch_content else "reused"
+
+    @property
+    def retired_patch(self):
+        """The patch file this bump orphans, if any.
+
+        Only a regeneration orphans anything, and only for a family that moves
+        its recipe: once the rename lands there is no recipe left naming the
+        old file. A reuse keeps the same file, and slint-cpp keeps a recipe per
+        release, each still naming the patch it was cut with.
+        """
+        if self.family.keeps_history or not self.patch_content:
+            return None
+        return self.previous_patch
 
 
 class Failure(Exception):
@@ -438,6 +454,32 @@ def resolve_patch(previous_patch, version, workdir, sha, manifests):
     return new_patch.name, regenerate_patch(previous_patch, workdir, sha, manifests)
 
 
+def retire_patch(patch):
+    """Drop a gettext patch the layer no longer references.
+
+    Called once the recipe that used to name it has been renamed onto the new
+    release and rewritten. Nothing reaches a patch except through bitbake's
+    FILESPATH, which is <recipe dir>/<BPN>, so only the recipes sitting beside
+    its directory can name it -- and the same basename exists under more than
+    one family, so a layer-wide search by name would find slint-cpp's copy and
+    conclude this one is still in use.
+    """
+    directory = patch.parent.parent
+    referring = sorted(
+        path.name
+        for suffix in ("*.bb", "*.bbappend", "*.inc")
+        for path in directory.glob(suffix)
+        if patch.name in path.read_text()
+    )
+    if referring:
+        raise Failure(
+            "refusing to remove {}: still referenced by {}".format(
+                patch.name, ", ".join(referring)
+            )
+        )
+    git(["rm", "--quiet", "--", patch])
+
+
 # --------------------------------------------------------------------------
 # Recipes
 # --------------------------------------------------------------------------
@@ -529,12 +571,13 @@ def repin_launcher(version, sha, md5, branch):
 # --------------------------------------------------------------------------
 
 
-def verify(written, workdir, new_patches):
+def verify(written, workdir, new_patches, retired_patches):
     """Checks on what actually landed on disk.
 
     retarget() already guarantees every substitution fired, so this covers what
     it cannot see: that each recipe still points at a patch that exists and
-    applies, and that no pre-existing patch file was touched.
+    applies, and that no pre-existing patch file was touched beyond the ones
+    deliberately retired.
     """
     problems = []
 
@@ -568,11 +611,16 @@ def verify(written, workdir, new_patches):
                         )
                     )
 
-    # Existing patch files are load-bearing for older releases: any modification
-    # to one that we did not create is a bug in this script.
+    # Existing patch files are load-bearing for older releases: any change to
+    # one we neither created nor retired is a bug in this script. A retirement
+    # is a deletion and nothing else -- retire_patch() has already established
+    # that no recipe names the file.
     for name in git(["diff", "--name-only", "HEAD", "--"]).stdout.split():
-        if "/0001-WIP-" in name and name not in new_patches:
+        if "/0001-WIP-" in name and name not in new_patches + retired_patches:
             problems.append("modified an existing patch file: {}".format(name))
+    for name in retired_patches:
+        if (REPO / name).exists():
+            problems.append("failed to remove the retired patch file: {}".format(name))
 
     if problems:
         raise Failure("verification failed:\n  " + "\n  ".join(problems))
@@ -600,12 +648,10 @@ def summary_rows(summary, code=False):
         ("LICENSE.md md5", quote(summary["license_md5"])),
     ]
     for patch in summary["patches"]:
-        rows.append(
-            (
-                "{} patch".format(patch["recipe"]),
-                "{} ({})".format(quote(patch["patch"]), patch["action"]),
-            )
-        )
+        value = "{} ({})".format(quote(patch["patch"]), patch["action"])
+        if patch["retired"]:
+            value += ", {} removed".format(quote(patch["retired"]))
+        rows.append(("{} patch".format(patch["recipe"]), value))
     rows.append(("slint-launcher", summary["launcher"]))
     return rows
 
@@ -620,11 +666,14 @@ def commit_message(summary):
         "",
     ]
     for patch in summary["patches"]:
-        lines.append(
-            "The {} gettext patch was {}: {}".format(
-                patch["recipe"], patch["action"], patch["patch"]
-            )
+        line = "The {} gettext patch was {}: {}".format(
+            patch["recipe"], patch["action"], patch["patch"]
         )
+        if patch["retired"]:
+            line += ", replacing {}, which nothing references any more".format(
+                patch["retired"]
+            )
+        lines.append(line)
     lines += ["", "Produced by scripts/update-slint-version.py."]
     return "\n".join(lines) + "\n"
 
@@ -741,6 +790,7 @@ def main():
         if not args.dry_run:
             staged = []
             new_patches = []
+            retired_patches = []
             for bump in plan:
                 if bump.patch_content:
                     patch = bump.family.patch_dir / bump.patch
@@ -767,12 +817,20 @@ def main():
                 )
                 staged.append(bump.destination)
 
+                # After the rename and the rewrite above, so the only recipe
+                # that could still name the old patch no longer does.
+                if bump.retired_patch:
+                    retire_patch(bump.retired_patch)
+                    retired_patches.append(str(bump.retired_patch.relative_to(REPO)))
+
             if args.repin_launcher:
                 repin_launcher(args.version, sha, md5, branch)
                 staged.append(LAUNCHER_RECIPE)
 
             git(["add", "--"] + staged + new_patches)
-            verify([bump.destination for bump in plan], workdir, new_patches)
+            verify(
+                [bump.destination for bump in plan], workdir, new_patches, retired_patches
+            )
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
@@ -785,7 +843,12 @@ def main():
         "previous_version": cpp.old_version,
         "recipes": [bump.family.stem for bump in plan],
         "patches": [
-            {"recipe": bump.family.stem, "patch": bump.patch, "action": bump.patch_action}
+            {
+                "recipe": bump.family.stem,
+                "patch": bump.patch,
+                "action": bump.patch_action,
+                "retired": bump.retired_patch.name if bump.retired_patch else None,
+            }
             for bump in plan
             if bump.previous_patch
         ],
