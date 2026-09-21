@@ -32,10 +32,6 @@ on:
         type: string
         required: false
         default: ""
-      repin_launcher:
-        description: "Also move the slint-launcher recipe onto this release (only if it carries demos/launcher)"
-        type: boolean
-        default: false
       dry_run:
         description: "Update and validate, but do not push or open a pull request"
         type: boolean
@@ -70,12 +66,10 @@ jobs:
           VERSION: ${{ inputs.version }}
           SLINT_REV: ${{ inputs.slint_rev }}
           BRANCH: ${{ inputs.branch }}
-          REPIN_LAUNCHER: ${{ inputs.repin_launcher }}
         run: |
           args=()
           [ -n "$SLINT_REV" ] && args+=(--rev "$SLINT_REV")
           [ -n "$BRANCH" ] && args+=(--branch "$BRANCH")
-          [ "$REPIN_LAUNCHER" = "true" ] && args+=(--repin-launcher)
           scripts/update-slint-version.py "$VERSION" \
             --summary-json "$GITHUB_WORKSPACE/summary.json" \
             --commit-message-file "$GITHUB_WORKSPACE/message.txt" \
