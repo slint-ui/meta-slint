@@ -15,8 +15,8 @@ BUGTRACKER = "https://github.com/slint-ui/slint/issues"
 LICENSE = "GPL-3.0-only | Slint-Commercial"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eddf02df1cb330c56cc727e9e3a379c9"
 
-# v1.18.0 tag (same revision as slint-cpp_1.18.0)
-SLINT_REV = "bd20dab8529add087b5cbc81aec70bf30861ae4c"
+# v1.18.1 tag (same revision as slint-cpp_1.18.1)
+SLINT_REV = "372cf0ee5577c3dfec309a45e7b778ba4e81b734"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
 
 REQUIRED_DISTRO_FEATURES:append = ""
