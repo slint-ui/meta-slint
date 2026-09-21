@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Update the meta-slint recipes to a new Slint release.
 
-A release bump touches three recipe families plus the gettext patches two of
+A release bump touches four recipe families plus the gettext patches two of
 them carry:
 
-  * recipes-slint/slint/slint-cpp_<version>.bb           -- added, older ones kept
-  * recipes-slint/slint-viewer/slint-viewer_<version>.bb  -- moved onto the release
-  * recipes-example/slint-demos/slint-demos_<version>.bb  -- moved onto the release
+  * recipes-slint/slint/slint-cpp_<version>.bb                 -- added, older ones kept
+  * recipes-slint/slint-viewer/slint-viewer_<version>.bb       -- moved onto the release
+  * recipes-example/slint-demos/slint-demos_<version>.bb       -- moved onto the release
+  * recipes-example/slint-launcher/slint-launcher_<version>.bb -- moved onto the release
 
 The patch is the interesting part. It does exactly one thing -- insert the
 GETTEXT_BLOCK below into the manifest of every workspace the recipe builds from
@@ -29,7 +30,6 @@ dead weight. slint-cpp keeps every patch, because it keeps every recipe.
 Usage:
     scripts/update-slint-version.py 1.18.0
     scripts/update-slint-version.py 1.18.0 --rev pre-release/1.18 --branch pre-release/1.18
-    scripts/update-slint-version.py 1.18.0 --repin-launcher
     scripts/update-slint-version.py 1.18.0 --dry-run
 
 --summary-json, --commit-message-file and --pr-body-file write the machine
@@ -68,7 +68,6 @@ GETTEXT_BLOCK = (
 GETTEXT_ANCHOR = "\n[profile.release]\n"
 
 REPO = Path(__file__).resolve().parent.parent
-LAUNCHER_DIR = REPO / "recipes-example" / "slint-launcher"
 
 
 class Family:
@@ -76,7 +75,8 @@ class Family:
 
     workspaces names the upstream directories the family builds packages from,
     "" being the repository root. A family with no workspaces carries no gettext
-    patch (slint-viewer builds nothing that links gettext).
+    patch: neither slint-viewer nor slint-launcher builds anything that links
+    gettext.
 
     keeps_history is slint-cpp, which carries a recipe per release so
     PREFERRED_VERSION can select an older one; the others move onto the new
@@ -117,6 +117,9 @@ FAMILIES = [
     Family("slint-viewer", REPO / "recipes-slint" / "slint-viewer", (), False),
     # The demo binaries this recipe builds are spread over both workspaces.
     Family("slint-demos", REPO / "recipes-example" / "slint-demos", ("demos", "examples"), False),
+    # demos/launcher, which the releases have carried since 1.18.0. Before that
+    # the recipe tracked master and was bumped by hand.
+    Family("slint-launcher", REPO / "recipes-example" / "slint-launcher", (), False),
 ]
 
 # Everything any family might have to patch, so one sparse checkout covers them
@@ -537,58 +540,6 @@ def rewrite_recipe(text, old_version, new_version, sha, md5, branch, new_patch, 
     return text
 
 
-def launcher_recipe():
-    """The one slint-launcher recipe in the layer.
-
-    Found rather than named: the recipe was slint-launcher_git.bb while it
-    tracked master, and carries the release in its name now that it follows
-    one, so the file this moves is whatever is there.
-    """
-    found = sorted(LAUNCHER_DIR.glob("slint-launcher_*.bb"))
-    if len(found) != 1:
-        raise Failure(
-            "expected exactly one slint-launcher recipe in {}, found {}".format(
-                LAUNCHER_DIR, ", ".join(path.name for path in found) or "none"
-            )
-        )
-    return found[0]
-
-
-def repin_launcher(version, sha, md5, branch):
-    """Move the slint-launcher recipe onto the release.
-
-    The launcher tracked master while demos/launcher post-dated the release the
-    demos recipe was pinned to. Once a release carries it, the recipe can follow
-    the same revision as everything else -- and is renamed onto that release,
-    like slint-demos and slint-viewer, so its PV stops saying "git".
-    """
-    recipe = launcher_recipe()
-    text = recipe.read_text()
-    marker = 'SLINT_REV = "'
-    if marker not in text:
-        raise Failure("no SLINT_REV in {}".format(recipe))
-
-    # Replace the contiguous comment block that explains the master pin, which
-    # stops being true the moment we repin.
-    lines = text.splitlines(keepends=True)
-    start = next(i for i, line in enumerate(lines) if line.startswith(marker))
-    first_comment = start
-    while first_comment > 0 and lines[first_comment - 1].startswith("#"):
-        first_comment -= 1
-    lines[first_comment:start] = [
-        "# Pinned to the same revision as the slint-demos and slint-viewer recipes\n"
-        "# ({}, v{}), which now carries demos/launcher.\n".format(branch, version)
-    ]
-
-    destination = LAUNCHER_DIR / "slint-launcher_{}.bb".format(version)
-    if recipe != destination:
-        if destination.exists():
-            raise Failure("{} already exists".format(destination))
-        git(["mv", "--", recipe, destination])
-    destination.write_text(retarget("".join(lines), sha, md5, branch, destination.name))
-    return destination
-
-
 # --------------------------------------------------------------------------
 # Verification
 # --------------------------------------------------------------------------
@@ -675,7 +626,6 @@ def summary_rows(summary, code=False):
         if patch["retired"]:
             value += ", {} removed".format(quote(patch["retired"]))
         rows.append(("{} patch".format(patch["recipe"]), value))
-    rows.append(("slint-launcher", summary["launcher"]))
     return rows
 
 
@@ -742,11 +692,6 @@ def main():
         help="skip proving the revision is reachable from the SRC_URI branch",
     )
     parser.add_argument(
-        "--repin-launcher",
-        action="store_true",
-        help="also move the slint-launcher recipe onto this release",
-    )
-    parser.add_argument(
         "--dry-run", action="store_true", help="report what would change, write nothing"
     )
     parser.add_argument("--summary-json", help="write a JSON summary to this path")
@@ -794,21 +739,14 @@ def main():
                     bump.family.manifests(workdir),
                 )
 
-        launcher_carries_launcher = has_path("demos/launcher", workdir)
-        if args.repin_launcher:
-            if not launcher_carries_launcher:
-                raise Failure(
-                    "--repin-launcher was requested but demos/launcher does not "
-                    "exist at {}".format(sha[:12])
-                )
-            launcher_action = "repinned to v" + args.version
-        elif launcher_carries_launcher:
-            launcher_action = (
-                "left on master, but this release carries demos/launcher -- "
-                "consider --repin-launcher"
+        # The launcher recipe follows the release like the others, so a release
+        # without demos/launcher is not something to paper over by leaving it
+        # pinned to the previous one.
+        if not has_path("demos/launcher", workdir):
+            raise Failure(
+                "demos/launcher does not exist at {}, but the slint-launcher "
+                "recipe builds it and follows the release".format(sha[:12])
             )
-        else:
-            launcher_action = "left on master"
 
         if not args.dry_run:
             staged = []
@@ -846,9 +784,6 @@ def main():
                     retire_patch(bump.retired_patch)
                     retired_patches.append(str(bump.retired_patch.relative_to(REPO)))
 
-            if args.repin_launcher:
-                staged.append(repin_launcher(args.version, sha, md5, branch))
-
             git(["add", "--"] + staged + new_patches)
             verify(
                 [bump.destination for bump in plan], workdir, new_patches, retired_patches
@@ -874,7 +809,6 @@ def main():
             for bump in plan
             if bump.previous_patch
         ],
-        "launcher": launcher_action,
         "dry_run": args.dry_run,
     }
 

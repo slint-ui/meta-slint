@@ -2,7 +2,7 @@ inherit cargo_bin
 inherit pkgconfig
 
 # Pinned to the same revision as the slint-demos and slint-viewer recipes
-# (release/1, v1.18.0), which now carries demos/launcher.
+# (v1.18.0), which carries demos/launcher.
 SLINT_REV = "bd20dab8529add087b5cbc81aec70bf30861ae4c"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
 SRC_URI += "file://slint-launcher.service"
