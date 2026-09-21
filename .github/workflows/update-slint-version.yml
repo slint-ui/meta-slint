@@ -33,7 +33,7 @@ on:
         required: false
         default: ""
       repin_launcher:
-        description: "Also move slint-launcher_git.bb onto this release (only if it carries demos/launcher)"
+        description: "Also move the slint-launcher recipe onto this release (only if it carries demos/launcher)"
         type: boolean
         default: false
       dry_run:

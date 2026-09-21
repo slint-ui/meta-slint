@@ -68,7 +68,7 @@ GETTEXT_BLOCK = (
 GETTEXT_ANCHOR = "\n[profile.release]\n"
 
 REPO = Path(__file__).resolve().parent.parent
-LAUNCHER_RECIPE = REPO / "recipes-example" / "slint-launcher" / "slint-launcher_git.bb"
+LAUNCHER_DIR = REPO / "recipes-example" / "slint-launcher"
 
 
 class Family:
@@ -537,17 +537,36 @@ def rewrite_recipe(text, old_version, new_version, sha, md5, branch, new_patch, 
     return text
 
 
-def repin_launcher(version, sha, md5, branch):
-    """Move slint-launcher_git.bb from master onto the release.
+def launcher_recipe():
+    """The one slint-launcher recipe in the layer.
 
-    The launcher tracks master because demos/launcher post-dates the release the
-    demos recipe is pinned to. Once a release carries it, the recipe can follow
-    the same revision as everything else.
+    Found rather than named: the recipe was slint-launcher_git.bb while it
+    tracked master, and carries the release in its name now that it follows
+    one, so the file this moves is whatever is there.
     """
-    text = LAUNCHER_RECIPE.read_text()
+    found = sorted(LAUNCHER_DIR.glob("slint-launcher_*.bb"))
+    if len(found) != 1:
+        raise Failure(
+            "expected exactly one slint-launcher recipe in {}, found {}".format(
+                LAUNCHER_DIR, ", ".join(path.name for path in found) or "none"
+            )
+        )
+    return found[0]
+
+
+def repin_launcher(version, sha, md5, branch):
+    """Move the slint-launcher recipe onto the release.
+
+    The launcher tracked master while demos/launcher post-dated the release the
+    demos recipe was pinned to. Once a release carries it, the recipe can follow
+    the same revision as everything else -- and is renamed onto that release,
+    like slint-demos and slint-viewer, so its PV stops saying "git".
+    """
+    recipe = launcher_recipe()
+    text = recipe.read_text()
     marker = 'SLINT_REV = "'
     if marker not in text:
-        raise Failure("no SLINT_REV in {}".format(LAUNCHER_RECIPE))
+        raise Failure("no SLINT_REV in {}".format(recipe))
 
     # Replace the contiguous comment block that explains the master pin, which
     # stops being true the moment we repin.
@@ -561,9 +580,13 @@ def repin_launcher(version, sha, md5, branch):
         "# ({}, v{}), which now carries demos/launcher.\n".format(branch, version)
     ]
 
-    LAUNCHER_RECIPE.write_text(
-        retarget("".join(lines), sha, md5, branch, LAUNCHER_RECIPE.name)
-    )
+    destination = LAUNCHER_DIR / "slint-launcher_{}.bb".format(version)
+    if recipe != destination:
+        if destination.exists():
+            raise Failure("{} already exists".format(destination))
+        git(["mv", "--", recipe, destination])
+    destination.write_text(retarget("".join(lines), sha, md5, branch, destination.name))
+    return destination
 
 
 # --------------------------------------------------------------------------
@@ -721,7 +744,7 @@ def main():
     parser.add_argument(
         "--repin-launcher",
         action="store_true",
-        help="also move slint-launcher_git.bb onto this release",
+        help="also move the slint-launcher recipe onto this release",
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="report what would change, write nothing"
@@ -824,8 +847,7 @@ def main():
                     retired_patches.append(str(bump.retired_patch.relative_to(REPO)))
 
             if args.repin_launcher:
-                repin_launcher(args.version, sha, md5, branch)
-                staged.append(LAUNCHER_RECIPE)
+                staged.append(repin_launcher(args.version, sha, md5, branch))
 
             git(["add", "--"] + staged + new_patches)
             verify(
