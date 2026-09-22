@@ -186,11 +186,12 @@ jobs:
           echo "Volume: $(df -h "$SSTATE_DIR" | awk 'NR==2 {print $4" free of "$2}')"
       - name: "build ${{ inputs.device }} demo image"
         env:
-          # Download URL for the RZ/G3E proprietary graphics package, which
-          # Renesas only hands out under licence, so it comes from an internal
-          # mirror. Actions masks the value in logs; the build script also never
-          # prints it.
+          # Download URLs for the Renesas proprietary graphics packages, which
+          # Renesas only hands out under licence, so they come from an internal
+          # mirror. Actions masks the values in logs; the build scripts also never
+          # print them. One per board: the BSP lines differ, so the packages do too.
           RZG3E_GRAPHICS_URL: ${{ secrets.NEXTCLOUD_URL_RZG3E_BSP_GRAPHICS }}
+          RZG3L_GRAPHICS_URL: ${{ secrets.NEXTCLOUD_URL_RZG3L_BSP_GRAPHICS }}
         run: |
           # sstate lives directly on the shared Volume: bitbake restores from and
           # writes to it in place (the model main uses, where restore works). The
@@ -202,8 +203,13 @@ jobs:
           # than the su command line, which would expose it in the process list.
           SECRET_URL_FILE=/home/build/.demo-image-url
           sudo rm -f "$SECRET_URL_FILE"
-          if [ -n "${RZG3E_GRAPHICS_URL:-}" ]; then
-            printf '%s' "$RZG3E_GRAPHICS_URL" | sudo tee "$SECRET_URL_FILE" >/dev/null
+          case "${{ inputs.device }}" in
+            rzg3e) SECRET_URL="${RZG3E_GRAPHICS_URL:-}" ;;
+            rzg3l) SECRET_URL="${RZG3L_GRAPHICS_URL:-}" ;;
+            *)     SECRET_URL="" ;;
+          esac
+          if [ -n "$SECRET_URL" ]; then
+            printf '%s' "$SECRET_URL" | sudo tee "$SECRET_URL_FILE" >/dev/null
             sudo chown build:build "$SECRET_URL_FILE"
             sudo chmod 600 "$SECRET_URL_FILE"
           fi
@@ -214,7 +220,7 @@ jobs:
             ARTIFACT_DIR='${WORK_ROOT}/artifacts' \
             ARTIFACT_BASENAME='${{ inputs.device }}-slint-demo' \
             SSTATE_DIR='${SSTATE_DIR}' \
-            RZG3E_GRAPHICS_URL_FILE='${SECRET_URL_FILE}' \
+            GRAPHICS_URL_FILE='${SECRET_URL_FILE}' \
             meta-slint/scripts/demo-images/${{ inputs.device }}.sh"
           build_rc=$?
           set -e
