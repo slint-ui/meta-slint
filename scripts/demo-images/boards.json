@@ -53,7 +53,8 @@
       "name": "Renesas",
       "flashing": "Unzip and write the `.img` to an SD card (`dd`), set the board to SD-card boot and power on.",
       "boards": [
-        { "device": "rzg3e", "name": "RZ/G3E SMARC EVK", "soc": "RZ/G3E", "gpu": "Arm Mali" }
+        { "device": "rzg3e", "name": "RZ/G3E SMARC EVK", "soc": "RZ/G3E", "gpu": "Arm Mali" },
+        { "device": "rzg3l", "name": "RZ/G3L SMARC EVK", "soc": "RZ/G3L", "gpu": "Arm Mali" }
       ]
     },
     {
