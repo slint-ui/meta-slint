@@ -1,9 +1,10 @@
 ## Introduction
 
-This layer contains recipes and classes for building Slint's C++ API, as well as the Rust based
-demos.
+This layer contains recipes and classes for building Slint's C++ API, a class for building Rust
+applications that use Slint, as well as the Rust based demos.
 
-For a Rust based application using Slint, use [meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin) directly.
+For a Rust based application using Slint, inherit the `slint_rust` class in your application's recipe.
+See [Rust Applications](#rust-applications) below.
 
 For a C++ based application, the recipes in this layer assume that your application is built using CMake and
 uses `find_package(Slint)` to locate Slint, and then uses `slint_target_sources` to compile `.slint` files to C++
@@ -53,6 +54,56 @@ PACKAGECONFIG:remove:pn-slint-cpp = " renderer-femtovg "
 
 The Skia renderer requires clang to compile. The [meta-clang](https://github.com/kraj/meta-clang) layer
 provides current versions of clang that work with the recipes in this layer.
+
+## Rust Applications
+
+The `slint_rust` class builds a Rust application that uses Slint with
+[meta-rust-bin](https://github.com/rust-embedded/meta-rust-bin)'s `cargo_bin` class. Select the renderers
+and backends your application uses, and the class adds the matching build dependencies, required
+`DISTRO_FEATURES`, and cargo features, and sets up the environment that the Skia renderer needs to build:
+
+```
+SUMMARY = "My Slint application"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=..."
+SRC_URI = "git://github.com/me/my-app.git;protocol=https;branch=main"
+SRCREV = "..."
+
+inherit slint_rust
+
+SLINT_RENDERERS = "skia"
+SLINT_BACKENDS = "linuxkms"
+```
+
+| Variable                     | Values                                                               | Default    |
+|------------------------------|----------------------------------------------------------------------|------------|
+| `SLINT_RENDERERS`            | `skia`, `skia-opengl`, `skia-vulkan`, `femtovg`, `software`          | `skia`     |
+| `SLINT_BACKENDS`             | `linuxkms`, `linuxkms-noseat`, `winit`, `winit-wayland`, `winit-x11` | `linuxkms` |
+| `SLINT_CARGO_FEATURE_PREFIX` | Prepended to each selected cargo feature                             | `slint/`   |
+
+Each entry enables the Slint cargo feature of the same name, for example `renderer-skia` or
+`backend-linuxkms-noseat`. With the default prefix, the features are enabled on the `slint` crate
+(`slint/renderer-skia`), which works when your package depends on `slint` directly. If your application
+has features of the same name that forward to Slint, set `SLINT_CARGO_FEATURE_PREFIX = ""`. To select the
+features yourself in `CARGO_FEATURES`, set `SLINT_CARGO_FEATURES = ""`.
+
+The selected features are added to the `slint` crate's default features, unless your `Cargo.toml`
+disables those. Use `linuxkms-noseat` to run on LinuxKMS without seatd, for example as the only
+application on a device.
+
+Some things to keep in mind:
+
+ - The Skia renderer requires the [meta-clang](https://github.com/kraj/meta-clang) layer. Without it, the
+   recipe is skipped, and bitbake reports that meta-clang is missing.
+ - cargo fetches the crates, and the Skia renderer fetches Skia's sources, while `do_compile` runs, so
+   the build needs network access.
+ - Compiling Skia uses a lot of memory. The class disables LTO, and you can bound the number of parallel
+   jobs with `export CARGO_BUILD_JOBS = "..."` in your `conf/local.conf`.
+ - The class doesn't set `S`. For a git checkout on releases before whinlatter, set
+   `S = "${WORKDIR}/git"` as usual.
+
+The [slint-hello-world-rust](recipes-example/slint-hello-rust/slint-hello-world-rust_git.bb) recipe
+builds the [Slint Rust template](https://github.com/slint-ui/slint-rust-template) this way.
 
 ## Building an SDK that contains Slint
 
