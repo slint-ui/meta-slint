@@ -7,6 +7,9 @@ cd bitbake-builds/poky-wrynose
 bitbake-layers show-layers
 bitbake -c compile slint-hello-world
 bitbake -c compile slint-demos
+# A full build, through packaging and QA: the example for building a Rust
+# application with the slint_rust class, with the Skia renderer.
+bitbake slint-hello-world-rust
 # Disabled: populate_sdk pushes the total run time past GitHub Actions' 6h job
 # timeout. The hello-world + demos compiles together already exercise slint-cpp
 # and the cargo plumbing; re-enable once we've sped things up (less conservative
