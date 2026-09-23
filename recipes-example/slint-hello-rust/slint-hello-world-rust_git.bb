@@ -1,21 +1,18 @@
-inherit cargo_bin
-
-SRC_URI = "git://github.com/slint-ui/slint-rust-template.git;protocol=https;branch=main;rev=main"
-
-SUMMARY = "Work in progress recipe for Slint Hello World"
+SUMMARY = "Slint Hello World in Rust, built with the Skia renderer"
+DESCRIPTION = "Builds the Slint Rust template application for the LinuxKMS \
+backend with the Skia renderer, as an example for using the slint_rust class."
 HOMEPAGE = "https://github.com/slint-ui/slint"
 LICENSE = "GPL-3.0-only | Slint-Commercial"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=9e911597e678943cde54111f7518e299"
 
-DEPENDS:append = " fontconfig"
+SRC_URI = "git://github.com/slint-ui/slint-rust-template.git;protocol=https;branch=main;rev=main"
 
-# meta-rust-bin's cargo_bin doesn't remap ${WORKDIR} out of rustc's baked-in
-# debug paths the way oe-core's rust classes do, so do it here to keep the
-# absolute cargo_home paths out of the binary (buildpaths QA).
-RUSTFLAGS += "--remap-path-prefix=${WORKDIR}=${TARGET_DBGSRC_DIR}"
-
+inherit slint_rust
 inherit slint_git_source
 
-PV = "slint-hello-world-rust-${SRCPV}"
+# The template depends on the slint crate directly, so slint_rust selects
+# slint/renderer-skia and slint/backend-linuxkms on top of its default features.
+SLINT_RENDERERS = "skia"
+SLINT_BACKENDS = "linuxkms"
 
-do_compile[network] = "1"
+PV = "slint-hello-world-rust-${SRCPV}"

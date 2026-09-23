@@ -38,6 +38,11 @@ PACKAGECONFIG:append:class-target = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'backend-winit-x11', '', d)} \
 "
 
+python () {
+    if bb.utils.contains('PACKAGECONFIG', 'renderer-skia', True, False, d):
+        slint_require_clang_layer(d, "The renderer-skia PACKAGECONFIG")
+}
+
 PACKAGECONFIG[slint-compiler] = "-DSLINT_FEATURE_COMPILER=ON, -DSLINT_FEATURE_COMPILER=OFF,"
 PACKAGECONFIG[slint-runtime] = "-DSLINT_BUILD_RUNTIME=ON, -DSLINT_BUILD_RUNTIME=OFF,"
 PACKAGECONFIG[backend-linuxkms] = "-DSLINT_FEATURE_BACKEND_LINUXKMS=ON, -DSLINT_FEATURE_BACKEND_LINUXKMS=OFF,libdrm virtual/egl virtual/libgbm seatd udev libinput"

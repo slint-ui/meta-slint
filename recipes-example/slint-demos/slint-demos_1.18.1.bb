@@ -1,6 +1,3 @@
-inherit cargo_bin
-inherit pkgconfig
-
 # Pinned to a release (not master): the demos get reshuffled on master. v1.18.1 tag.
 SLINT_REV = "372cf0ee5577c3dfec309a45e7b778ba4e81b734"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
@@ -13,22 +10,12 @@ or the printer demo and installs the binaries into /usr/bin."
 HOMEPAGE = "https://slint.dev/"
 LICENSE = "GPL-3.0-only | Slint-Commercial"
 
-inherit slint_common
-inherit features_check
+inherit slint_rust
+inherit slint_git_source
 
-REQUIRED_DISTRO_FEATURES:append = ""
-REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
-
-DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgles2"
-DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH} ca-certificates-native curl-native ninja-native"
-DEPENDS:append:class-target = " libdrm virtual/egl virtual/libgbm seatd udev libinput"
-DEPENDS:append:class-target = " \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'libxcb', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland', '', d)} \
-"
-RDEPENDS:${PN}:class-target += "xkeyboard-config"
-
-CARGO_DISABLE_BITBAKE_VENDORING = "1"
+# LinuxKMS + Skia, selected on the slint crate (slint/renderer-skia, ...).
+SLINT_RENDERERS = "skia"
+SLINT_BACKENDS = "linuxkms"
 
 # Since 1.18 the demos and the examples are each their own cargo workspace, with
 # the repository root excluding both, so the binaries below come from two
@@ -40,33 +27,23 @@ CARGO_MANIFEST_PATH = "${S}/demos/Cargo.toml"
 # which is slow and pulls in binaries other recipes ship -- that is how
 # slint-demos once came to install /usr/bin/slint-viewer and clash with the
 # slint-viewer package at rootfs time. Scope each build with one -p per binary.
-# cargo_bin turns CARGO_FEATURES into --features on its own; the second
-# invocation has to pass them itself.
+# cargo_bin turns CARGO_FEATURES (which slint_rust fills from SLINT_RENDERERS
+# and SLINT_BACKENDS) into --features on its own; the second invocation has to
+# pass them itself.
 EXTRA_CARGO_FLAGS = "${@' '.join('-p ' + p for p in (d.getVar('SLINT_DEMOS') or '').split())}"
 SLINT_EXAMPLES_CARGO_FLAGS = "${@' '.join('-p ' + p for p in (d.getVar('SLINT_EXAMPLES') or '').split())}"
 
-do_configure[network] = "1"
-do_compile[network] = "1"
-
-
 BBCLASSEXTEND = "native"
-
-CARGO_FEATURES = "slint/backend-linuxkms slint/renderer-skia"
 
 SLINT_DEMOS = "printerdemo energy-monitor home-automation"
 SLINT_EXAMPLES = "slide_puzzle gallery opengl_texture opengl_underlay"
 
-do_compile:prepend() {
-    CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
-    export CURL_CA_BUNDLE
-    # Skia + LTO is very RAM-hungry; keep LTO off.
-    export CARGO_PROFILE_RELEASE_LTO=false
-}
 do_compile:append() {
     # The second workspace. cargo_bin_do_compile has already exported the
-    # cross-compilation environment and CARGO_TARGET_DIR, and do_compile:prepend
-    # the CA bundle and the LTO override, so this invocation only has to restate
-    # the flags the class built from CARGO_MANIFEST_PATH and EXTRA_CARGO_FLAGS.
+    # cross-compilation environment and CARGO_TARGET_DIR, and slint_rust's
+    # do_compile:prepend the CA bundle and the LTO override, so this invocation
+    # only has to restate the flags the class built from CARGO_MANIFEST_PATH and
+    # EXTRA_CARGO_FLAGS.
     # Both workspaces write into the same target directory, so every binary ends
     # up in CARGO_BINDIR for cargo_bin_do_install to pick up.
     bbnote cargo build --manifest-path "${S}/examples/Cargo.toml" ${SLINT_EXAMPLES_CARGO_FLAGS}
@@ -76,11 +53,6 @@ do_compile:append() {
         --profile="${CARGO_BUILD_PROFILE}" \
         --features "${CARGO_FEATURES}" \
         ${SLINT_EXAMPLES_CARGO_FLAGS}
-
-    # cargo_bin_do_install ships every .so/.rlib next to the demo binaries; drop
-    # them so the demos package carries just the executables.
-    rm -f "${CARGO_BINDIR}"/*.so
-    rm -f "${CARGO_BINDIR}"/*.rlib
 }
 
 # The demo binaries carry absolute build paths that the Rust --remap-path-prefix
