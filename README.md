@@ -125,6 +125,34 @@ If your build of Slint enables the Skia renderer (`SLINT_FEATURE_RENDERER_SKIA`)
 [meta-clang](https://github.com/kraj/meta-clang) layer in your project and set `CLANGSDK = "1"` in your `conf/local.conf`
 before running the `populate_sdk` task on your image.
 
+## Building an SDK for Rust applications
+
+The `slint-rust-sdk-env` package sets up cargo in your SDK, so that `cargo build` cross-compiles Rust
+applications for the target, including ones that use Slint's Skia renderer. Add it to the target part of
+the SDK, together with clang for Skia, in your `conf/local.conf`:
+
+```
+CLANGSDK = "1"
+TOOLCHAIN_TARGET_TASK:append = " slint-rust-sdk-env"
+```
+
+This requires the [meta-clang](https://github.com/kraj/meta-clang) layer. Then run the `populate_sdk` task
+on your image and install the SDK.
+
+The SDK doesn't contain Rust itself. Install it with [rustup](https://rustup.rs), and add the Rust target
+for your device, for example `rustup target add aarch64-unknown-linux-gnu`. The package's
+`environment-setup.d/slint-rust.sh` in the SDK's target sysroot names the target to add.
+
+To build, source the SDK's `environment-setup` script and run cargo as usual:
+
+```
+. /opt/poky/<version>/environment-setup-<target>
+cargo build --release
+```
+
+The script sets `CARGO_BUILD_TARGET` and the linker for the target, keeps build scripts compiling for
+the host, and passes the target's flags to bindgen. The binaries end up in `target/<rust target>/release`.
+
 ## Demo Images
 
 ### STM32 MPU OpenSTLinux
