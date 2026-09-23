@@ -1,7 +1,5 @@
-inherit cargo_bin
-inherit pkgconfig
-inherit slint_common
-inherit features_check
+inherit slint_rust
+inherit slint_git_source
 
 SUMMARY = "The Slint viewer, built as the remote viewer"
 DESCRIPTION = "slint-viewer is the tool that displays .slint files directly. \
@@ -19,37 +17,14 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eddf02df1cb330c56cc727e9e3a379c9"
 SLINT_REV = "372cf0ee5577c3dfec309a45e7b778ba4e81b734"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
 
-REQUIRED_DISTRO_FEATURES:append = ""
-REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
+# Same renderer and backend as the slint-demos recipe. The viewer forwards its
+# own backend-linuxkms and renderer-skia features to slint, so let slint_rust
+# select those, unprefixed. The winit backend and x11/wayland libs come in via
+# the slint crate's defaults, pulled by the 'remote' feature.
+SLINT_RENDERERS = "skia"
+SLINT_BACKENDS = "linuxkms"
+SLINT_CARGO_FEATURE_PREFIX = ""
 
-# Same dependency set as the slint-demos recipe (linuxkms + skia renderer),
-# clang-cross is needed for Skia's bindgen. The winit backend and x11/wayland
-# libs come in via the slint crate's defaults, pulled by the 'remote' feature.
-DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgles2"
-DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH} ca-certificates-native curl-native ninja-native"
-DEPENDS:append:class-target = " libdrm virtual/egl virtual/libgbm seatd udev libinput"
-DEPENDS:append:class-target = " \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'libxcb', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland', '', d)} \
-"
-RDEPENDS:${PN}:class-target += "xkeyboard-config"
-
-# Fetch crate dependencies straight from crates.io rather than pre-vendoring.
-CARGO_DISABLE_BITBAKE_VENDORING = "1"
-
-# Build just the viewer binary (its cdylib lib target is Android-only). cargo_bin
-# turns CARGO_FEATURES into --features on its own.
+# Build just the viewer binary (its cdylib lib target is Android-only).
 EXTRA_CARGO_FLAGS = "-p slint-viewer --bin slint-viewer"
-CARGO_FEATURES = "remote backend-linuxkms renderer-skia"
-
-do_configure[network] = "1"
-do_compile[network] = "1"
-
-do_compile:prepend() {
-    CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
-    export CURL_CA_BUNDLE
-
-    # Skia + LTO is very RAM-hungry; keep LTO off (as slint-demos does). The job
-    # count is bounded globally via CARGO_BUILD_JOBS (see common.sh).
-    export CARGO_PROFILE_RELEASE_LTO=false
-}
+CARGO_FEATURES = "remote"

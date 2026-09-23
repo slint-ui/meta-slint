@@ -1,6 +1,3 @@
-inherit cargo_bin
-inherit pkgconfig
-
 # Pinned to the same revision as the slint-demos and slint-viewer recipes
 # (v1.18.1), which carries demos/launcher.
 SLINT_REV = "372cf0ee5577c3dfec309a45e7b778ba4e81b734"
@@ -15,27 +12,12 @@ one (via exec on LinuxKMS), plus an entry to start the remote slint-viewer."
 HOMEPAGE = "https://slint.dev/"
 LICENSE = "GPL-3.0-only | Slint-Commercial"
 
-inherit slint_common
-inherit features_check
-
-REQUIRED_DISTRO_FEATURES:append = ""
-REQUIRED_DISTRO_FEATURES:append:class-target = "opengl"
-
-DEPENDS:append:class-target = " fontconfig libxkbcommon virtual/libgles2"
-DEPENDS:append:class-target = " clang-cross-${TARGET_ARCH} ca-certificates-native curl-native ninja-native"
-DEPENDS:append:class-target = " libdrm virtual/egl virtual/libgbm seatd udev libinput"
-DEPENDS:append:class-target = " \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'libxcb', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland', '', d)} \
-"
-RDEPENDS:${PN}:class-target += "xkeyboard-config"
+inherit slint_rust
+inherit slint_git_source
 
 # The launcher discovers and execs the demo binaries on PATH and offers a
 # "remote viewer" entry, so both must be installed alongside it.
 RDEPENDS:${PN}:class-target += "slint-demos slint-viewer"
-
-# Fetch crate dependencies straight from crates.io rather than pre-vendoring.
-CARGO_DISABLE_BITBAKE_VENDORING = "1"
 
 # The demos live in their own cargo workspace (demos/), separate from the repo
 # root -- so build the launcher package from that manifest, not the root (a plain
@@ -46,26 +28,13 @@ CARGO_DISABLE_BITBAKE_VENDORING = "1"
 # enabling that feature makes Skia the default renderer, so no runtime override
 # is needed.
 CARGO_MANIFEST_PATH = "${S}/demos/Cargo.toml"
-
-# cargo_bin turns CARGO_FEATURES into --features on its own.
 EXTRA_CARGO_FLAGS = "--no-default-features -p launcher"
-CARGO_FEATURES = "backend-linuxkms renderer-skia"
 
-do_configure[network] = "1"
-do_compile[network] = "1"
-
-do_compile:prepend() {
-    CURL_CA_BUNDLE=${STAGING_DIR_NATIVE}/etc/ssl/certs/ca-certificates.crt
-    export CURL_CA_BUNDLE
-    # Skia + LTO is very RAM-hungry; keep LTO off (as slint-demos does).
-    export CARGO_PROFILE_RELEASE_LTO=false
-}
-do_compile:append() {
-    # cargo_bin_do_install ships every .so/.rlib next to the launcher binary; drop
-    # them so the package carries just the executable.
-    rm -f "${CARGO_BINDIR}"/*.so
-    rm -f "${CARGO_BINDIR}"/*.rlib
-}
+# The launcher forwards its own backend-linuxkms and renderer-skia features to
+# slint, so let slint_rust select those, unprefixed.
+SLINT_RENDERERS = "skia"
+SLINT_BACKENDS = "linuxkms"
+SLINT_CARGO_FEATURE_PREFIX = ""
 
 # The launcher is the boot entry point: autostart it, and it launches the demos.
 inherit systemd
