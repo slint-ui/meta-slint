@@ -28,10 +28,18 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     kernel-modules \
 "
 
-# systemd-networkd + avahi so the board comes up on DHCP and is reachable as
-# <hostname>.local.
+# ConnMan + avahi so the board comes up on DHCP and is reachable as
+# <hostname>.local. Unlike the other demo images this can't use systemd-networkd:
+# the Toradex distro deliberately disables systemd-conf's wired.network (its
+# bbappend in meta-toradex-bsp-common rewrites the match to disabled_en*/eth*)
+# and leaves wired Ethernet to ConnMan, as in tdx-reference-minimal-image. So
+# install the same ConnMan packages as that image (minus Wi-Fi, which isn't
+# preconfigured here).
 CORE_IMAGE_EXTRA_INSTALL += " \
-    systemd-conf \
+    connman \
+    connman-plugin-loopback \
+    connman-plugin-ethernet \
+    connman-client \
     avahi-daemon \
     avahi-utils \
     libnss-mdns \
