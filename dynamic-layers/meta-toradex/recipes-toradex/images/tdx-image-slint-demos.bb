@@ -70,6 +70,15 @@ CORE_IMAGE_EXTRA_INSTALL:append:imxmali = " mali-imx-libegl mali-imx-libgles2"
 # and only the wayland build ships the GBM/DRM EGL that linuxkms needs.
 CORE_IMAGE_EXTRA_INSTALL:append:imxviv = " libegl-imx libgles2-imx"
 
+# Vulkan: the loader plus the machine's ICD. The vulkan DISTRO_FEATURE is already
+# on (poky default; the build script keeps it). vulkan-loader only RRECOMMENDS the
+# ICD, so name it explicitly. On Mali the driver is in libmali itself and
+# mali-imx-libvulkan ships its ICD manifest. On Vivante, key on imxvulkan rather
+# than imxviv: meta-freescale sets it for the i.MX8 parts whose GPU has Vulkan
+# (8M Plus, 8QM, 8QXP) but not for the i.MX8M Mini, whose GC NanoUltra has none.
+CORE_IMAGE_EXTRA_INSTALL:append:imxmali = " vulkan-loader mali-imx-libvulkan"
+CORE_IMAGE_EXTRA_INSTALL:append:imxvulkan = " vulkan-loader libvulkan-imx"
+
 # Emit the Toradex Easy Installer (TEZI) bundle -- the standard, guided flashing
 # path for Toradex modules: recovery mode + Easy Installer, which provisions the
 # on-module eMMC and places the boot container for you. teziimg is Toradex's own
