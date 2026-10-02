@@ -69,7 +69,8 @@ ACCEPT_FSL_EULA = "1"
 # opengl is required at build time -- Skia always links GL. x11 and opencl are
 # unused. vulkan stays: on i.MX95 the Mali driver (which PROVIDES virtual/libgbm)
 # DEPENDS on vulkan-loader, so dropping the feature makes the libgbm -> launcher
-# chain unbuildable.
+# chain unbuildable. It also lets the image ship the Vulkan driver (see
+# tdx-image-slint-demos.bb).
 DISTRO_FEATURES:append = " opengl"
 DISTRO_FEATURES:remove = " x11 opencl"
 EOF
