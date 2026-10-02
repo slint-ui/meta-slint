@@ -25,6 +25,15 @@ CORE_IMAGE_BASE_INSTALL += " \
     libnss-mdns \
 "
 
+# Vulkan: the loader plus Mesa's Broadcom (v3dv) driver. meta-raspberrypi already
+# builds it whenever the vulkan DISTRO_FEATURE is on (poky default), but nothing
+# installs it: vulkan-loader is dlopen()ed, so no shlib dependency pulls it in, and
+# mesa-vulkan-drivers is only an RRECOMMENDS of the loader. Name both.
+CORE_IMAGE_BASE_INSTALL += " \
+    vulkan-loader \
+    mesa-vulkan-drivers \
+"
+
 # Emit a plain, uncompressed raw disk image (.wic). The workflow relabels it to
 # <device>-slint-demo.img and bundles it into <device>-slint-demo.zip;
 # balenaEtcher opens the zip and flashes the single raw .img to an SD card.
