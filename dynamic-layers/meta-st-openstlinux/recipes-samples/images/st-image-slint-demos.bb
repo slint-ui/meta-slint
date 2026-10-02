@@ -20,3 +20,8 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     packagegroup-framework-sample-slint \
     slint-launcher \
 "
+
+# Vulkan on the STM32MP25: the loader. gcnano-userland already pulls in its ICD
+# (libvulkan-driver-gcnano), but the loader is dlopen()ed, so nothing depends on it.
+# Keyed on the vulkan DISTRO_FEATURE, which the build script keeps only for MP2.
+CORE_IMAGE_EXTRA_INSTALL += "${@bb.utils.contains('DISTRO_FEATURES', 'vulkan', 'vulkan-loader', '', d)}"
