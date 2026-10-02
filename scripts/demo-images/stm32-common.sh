@@ -71,8 +71,16 @@ slint_demo_build_stm32() {
 
 # LinuxKMS framebuffer backend: no wayland/x11 (image sets CONFLICT_DISTRO_FEATURES).
 DISTRO_FEATURES:append = " opengl"
-DISTRO_FEATURES:remove = " wayland x11 vulkan opencl"
+DISTRO_FEATURES:remove = " wayland x11 opencl"
 EOF
+
+    # vulkan: the STM32MP25 GPU supports it, and ST's gcnano-userland already
+    # installs its Vulkan driver (keyed on the vulkan MACHINE_FEATURE, set once the
+    # EULA is accepted) -- but the loader needs the DISTRO_FEATURE, so keep it
+    # there. The STM32MP15 GPU has no Vulkan, so drop it on MP1.
+    if [ "$machine" != "stm32mp2" ]; then
+        echo 'DISTRO_FEATURES:remove = " vulkan"' >> conf/local.conf
+    fi
 
     bitbake "$image"
 
