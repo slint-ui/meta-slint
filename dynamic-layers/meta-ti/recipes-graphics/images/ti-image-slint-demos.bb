@@ -50,14 +50,25 @@ CORE_IMAGE_BASE_INSTALL += " kernel-modules"
 # GPU runtime the demo needs: Mesa's EGL/GLES/GBM via the PowerVR Gallium driver
 # (mesa-megadriver RRECOMMENDS the pvrsrvkm ti-img-rogue-driver) and the Rogue
 # DDK user libraries, which RDEPEND that kernel module and its firmware. We skip
-# the arago-graphics packagegroup on purpose: it drags in glmark2/kmscube, and
-# glmark2 wants wayland-protocols -- but this is a KMS/DRM image with no
-# compositor, so wayland stays out of the target. (AM62L has no GPU and renders
-# in software, so it gets none of this.)
+# the arago-graphics packagegroup on purpose: it drags in glmark2 and other
+# compositor-oriented tests, and this is a KMS/DRM image with no compositor.
+# (AM62L has no GPU and renders in software, so it gets none of this.)
 IMAGE_INSTALL:append:am62pxx-evm = " \
     ti-img-rogue-umlibs \
     mesa-megadriver \
     libegl libgles2 libgbm \
+"
+
+# Vulkan on AM62Px: the loader, the Rogue DDK's Vulkan driver (libvk-rogue,
+# libVK_IMG) and Mesa's pvr Vulkan frontend with its WSI (mesa-vulkan-drivers).
+# The loader is dlopen()ed and the drivers are only RRECOMMENDS, so name them.
+# The build script keeps the vulkan and wayland DISTRO_FEATUREs for this board,
+# which ti-img-rogue-umlibs needs to build libvk-rogue at all; libvk-rogue then
+# RDEPENDS the Wayland client library, but no compositor is installed.
+IMAGE_INSTALL:append:am62pxx-evm = " \
+    vulkan-loader \
+    libvk-rogue \
+    mesa-vulkan-drivers \
 "
 
 # GLES/GPU smoke tests, AM62Px only -- these exercise the GPU userspace, which
