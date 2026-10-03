@@ -82,14 +82,24 @@ slint_demo_build_ti() {
 # GPU-less boards: Slint's Skia renderer always links GL, so GLES/EGL must be
 # present to build (it just isn't used at runtime when rendering in software).
 DISTRO_FEATURES:append = " opengl"
-DISTRO_FEATURES:remove = " wayland x11 vulkan opencl"
+DISTRO_FEATURES:remove = " x11 opencl"
 EOF
     # GPU boards (AM62Px) render with the GPU via TI's proprietary Imagination
     # DDK; accept its license so the GLES userspace is built in. GPU-less boards
     # (AM62L) leave it out and let Skia raster in software (TI_GPU=0, set by the
     # wrapper; the recipes select the software backend for that machine).
+    #
+    # GPU boards also keep vulkan, so the image can ship the Vulkan driver -- and
+    # wayland with it: ti-img-rogue-umlibs only builds its Vulkan driver
+    # (libvk-rogue) when DISTRO_FEATURES has both, and libvk-rogue RDEPENDS
+    # wayland. Like the Vivante i.MX8 Toradex boards, this selects the Wayland
+    # builds of the libraries; it does not pull in a compositor, and we never
+    # install weston. GPU-less boards drop both.
     if [ "${TI_GPU:-1}" = "1" ]; then
         echo 'LICENSE_FLAGS_ACCEPTED:append = " ti-img-rogue"' >> conf/local.conf
+        echo 'DISTRO_FEATURES:append = " wayland vulkan"' >> conf/local.conf
+    else
+        echo 'DISTRO_FEATURES:remove = " wayland vulkan"' >> conf/local.conf
     fi
     echo 'INIT_MANAGER = "systemd"' >> conf/local.conf
     slint_demo_configure_local_conf conf/local.conf
