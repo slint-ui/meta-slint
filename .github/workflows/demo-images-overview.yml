@@ -7,6 +7,9 @@ name: Demo Images Overview
 # plus the release's asset list read from the API -- the assets themselves are
 # never downloaded (they total several GB), so this runs in seconds.
 #
+# boards.json itself is also published as a release asset, so tooling can read
+# the board list without a checkout.
+#
 # Runs on demand, and automatically after a Demo Images build finishes so the
 # page follows whatever was just published. (The workflow_run trigger only fires
 # for the copy of this file on the default branch.)
@@ -28,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Update the demo-images release description
     permissions:
-      contents: write      # editing the release
+      contents: write      # editing the release and uploading boards.json
     steps:
       - uses: actions/checkout@v4
       - name: "render the overview page"
@@ -48,3 +51,9 @@ jobs:
           gh release edit demo-images --repo "${{ github.repository }}" \
             --notes-file notes.md
           echo "Updated: https://github.com/${{ github.repository }}/releases/tag/demo-images"
+      - name: "publish boards.json as a release asset"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload demo-images --repo "${{ github.repository }}" \
+            --clobber scripts/demo-images/boards.json
