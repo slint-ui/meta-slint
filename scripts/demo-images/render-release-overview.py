@@ -5,7 +5,8 @@ Reads the board metadata (boards.json) and the release's asset list, and writes
 markdown with one table per vendor. Assets are matched to boards by the
 "<device>-" filename prefix; a board with no published asset is skipped, and any
 asset that matches no board is listed under "Other" so nothing goes missing,
-except those of the devices boards.json lists as "unlisted" (not supported).
+except those of the devices boards.json lists as "unlisted" (not supported) and
+boards.json itself, which the overview workflow publishes as an asset too.
 
 Usage:
     gh api repos/OWNER/REPO/releases/tags/demo-images \\
@@ -69,6 +70,8 @@ def main():
     raw = json.load(sys.stdin)
     assets = raw["assets"] if isinstance(raw, dict) else raw
     assets = [a for a in assets if a.get("state", "uploaded") == "uploaded"]
+    # The workflow publishes boards.json next to the images; it's not a download.
+    assets = [a for a in assets if a["name"] != "boards.json"]
     unlisted = meta.get("unlisted", [])
     assets = [a for a in assets if not any(pick_asset([a], d) for d in unlisted)]
 
