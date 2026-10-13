@@ -17,6 +17,14 @@ LICENSE = "MIT"
 # too, and dropbear and openssh conflict (both provide the SSH server), failing
 # do_rootfs. We keep the base image's OpenSSH.
 
+# On-target profiling and debugging: tools-debug brings gdb, gdbserver and
+# strace. The profiling tools are listed instead of using tools-profile, which
+# pulls in lttng-modules, LTTng's out-of-tree kernel tracer -- it doesn't build
+# against every vendor kernel (2.13.12 fails on Toradex's 6.6), and lttng-tools
+# would bring it back as a recommendation (still built), so leave LTTng out.
+IMAGE_FEATURES += "tools-debug"
+IMAGE_INSTALL += "perf powertop systemtap blktrace"
+
 # The launcher is the boot entry point (autostarts via slint-launcher.service)
 # and RDEPENDS the demos + viewer it launches, so installing it pulls them in.
 # The i.MX 8M Mini has a Vivante GC NanoUltra GPU; Slint's Skia renderer loads
