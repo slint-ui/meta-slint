@@ -12,6 +12,14 @@ IMAGE_LINGUAS = "en-us"
 
 IMAGE_FEATURES += "ssh-server-dropbear"
 
+# On-target profiling and debugging: tools-debug brings gdb, gdbserver and
+# strace. The profiling tools are listed instead of using tools-profile, which
+# pulls in lttng-modules, LTTng's out-of-tree kernel tracer -- it doesn't build
+# against every vendor kernel (2.13.12 fails on Toradex's 6.6), and lttng-tools
+# would bring it back as a recommendation (still built), so leave LTTng out.
+IMAGE_FEATURES += "tools-debug"
+CORE_IMAGE_EXTRA_INSTALL += "perf powertop systemtap blktrace"
+
 # Just the demos (+ fonts), none of the dev framework st-example-image-slint
 # pulls in, to keep the image and its flashing bundle small.
 # The launcher is the boot entry point (autostarts via slint-launcher.service),

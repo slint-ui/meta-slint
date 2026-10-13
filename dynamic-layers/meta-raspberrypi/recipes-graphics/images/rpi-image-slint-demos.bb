@@ -6,6 +6,14 @@ inherit core-image
 
 IMAGE_FEATURES += "ssh-server-dropbear"
 
+# On-target profiling and debugging: tools-debug brings gdb, gdbserver and
+# strace. The profiling tools are listed instead of using tools-profile, which
+# pulls in lttng-modules, LTTng's out-of-tree kernel tracer -- it doesn't build
+# against every vendor kernel (2.13.12 fails on Toradex's 6.6), and lttng-tools
+# would bring it back as a recommendation (still built), so leave LTTng out.
+IMAGE_FEATURES += "tools-debug"
+CORE_IMAGE_EXTRA_INSTALL += "perf powertop systemtap blktrace"
+
 # The launcher is the boot entry point: it autostarts (slint-launcher.service),
 # presents a menu, and launches the demos / remote viewer. It RDEPENDS slint-demos
 # and slint-viewer, so installing it pulls them in as the launchable binaries.
