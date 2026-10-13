@@ -4,8 +4,12 @@
     "render-release-overview.py and .github/workflows/demo-images-overview.yml).",
     "Adding a board means: a build script, a demo-images.yml input, and an entry",
     "here. The release assets are matched by the '<device>-' filename prefix, so",
-    "no asset name is stored -- only boards with a published asset are listed."
+    "no asset name is stored -- only boards with a published asset are listed.",
+    "'unlisted' names devices whose assets may still be on the release but are",
+    "not supported, so the page leaves them out instead of listing them under",
+    "'Other'."
   ],
+  "unlisted": ["phyboard-polis"],
   "vendors": [
     {
       "name": "Toradex",
@@ -25,13 +29,6 @@
       "boards": [
         { "device": "am62px", "name": "SK-AM62P-LP", "soc": "AM62Px", "gpu": "PowerVR" },
         { "device": "am62l", "name": "AM62L EVM (TMDS62LEVM)", "soc": "AM62L", "gpu": "none (software rendering)" }
-      ]
-    },
-    {
-      "name": "PHYTEC",
-      "flashing": "Unzip and write the `.img` to an SD card (`dd`, balenaEtcher or Raspberry Pi Imager), set the board to SD-card boot and power on.",
-      "boards": [
-        { "device": "phyboard-polis", "name": "phyBOARD-Polis", "soc": "i.MX8M Mini", "gpu": "Vivante" }
       ]
     },
     {
