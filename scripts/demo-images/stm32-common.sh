@@ -46,6 +46,9 @@ slint_demo_build_stm32() {
     sudo apt-get install -y libsdl1.2-dev 2>/dev/null || true
 
     set +eu
+    # The "y"s don't accept ST's EULA, and without it the image has no GPU
+    # stack (gcnano). EULA_<machine> answers that prompt for envsetup.sh.
+    export "EULA_${machine//[-.]/}=1"
     { DISTRO="$distro" MACHINE="$machine" source layers/meta-st/scripts/envsetup.sh; } < <(yes | head -n 20)
     set -eu
     if ! command -v bitbake-layers >/dev/null 2>&1; then
