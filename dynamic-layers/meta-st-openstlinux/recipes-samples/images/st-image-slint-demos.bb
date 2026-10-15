@@ -29,6 +29,11 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     slint-launcher \
 "
 
+# Mounts the bootfs, vendorfs and userfs partitions. ST's images get it from
+# packagegroup-framework-core-base; without it, /vendor stays empty, and that's
+# where gcnano installs its EGL, GBM and Vulkan libraries.
+CORE_IMAGE_EXTRA_INSTALL += "systemd-mount-partitions"
+
 # Vulkan on the STM32MP25: the loader. gcnano-userland already pulls in its ICD
 # (libvulkan-driver-gcnano), but the loader is dlopen()ed, so nothing depends on it.
 # Keyed on the vulkan DISTRO_FEATURE, which the build script keeps only for MP2.
