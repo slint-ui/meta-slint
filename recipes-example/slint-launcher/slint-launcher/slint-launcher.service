@@ -1,5 +1,11 @@
 [Unit]
 Description=Slint demo launcher (menu to discover and run the installed demos)
+# Every return to the menu (a demo quitting, or slint-launcher-gesture
+# restarting the unit) is a start. Allow more than a person returning to the
+# menu can manage, but still stop a launcher that crashes on startup, which
+# restarts about once a second (RestartSec).
+StartLimitIntervalSec=20
+StartLimitBurst=10
 
 [Service]
 ExecStart=/usr/bin/slint-demo-launcher
@@ -7,6 +13,8 @@ ExecStart=/usr/bin/slint-demo-launcher
 # exit when that demo quits -- restart then, to return to the launcher menu.
 Restart=always
 RestartSec=1
+# Don't keep the screen dark for long when a demo doesn't quit on SIGTERM.
+TimeoutStopSec=5
 
 [Install]
 WantedBy=multi-user.target
