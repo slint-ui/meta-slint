@@ -55,9 +55,10 @@ PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-test
 # The demo images don't ship an SBOM; skip SPDX generation.
 INHERIT:remove = "create-spdx"
 
-# uv, to install Python packages on the target. Its recipe lives in the
-# demo-images layer rather than in meta-slint, so the image recipes can't list it.
-IMAGE_INSTALL:append = " uv-bin"
+# uv, to install Python packages on the target, and Node.js with npm. Their
+# recipes live in the demo-images layer rather than in meta-slint, so the image
+# recipes can't list them.
+IMAGE_INSTALL:append = " uv-bin nodejs-bin nodejs-bin-npm"
 
 # --- Disk-space conservation ---
 
