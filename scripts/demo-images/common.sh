@@ -2,6 +2,9 @@
 # Shared helpers, sourced by a per-device script (e.g. imx95-evk.sh). Only
 # defines functions; the device script owns set -e / control flow.
 
+# The layer with the recipes only the demo images need (see its conf/layer.conf).
+SLINT_DEMO_LAYER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/meta-slint-demo-images"
+
 # Install Google's `repo` (used to fetch vendor BSPs) into ~/.local/bin if missing.
 slint_demo_ensure_repo_tool() {
     if command -v repo >/dev/null 2>&1; then
@@ -33,9 +36,12 @@ slint_demo_ensure_git_identity() {
 }
 
 # Append the config shared across every demo-image device to conf/local.conf:
-# the Slint feature set and disk-space conservation.
+# the Slint feature set, the tools installed on top of the image recipe, and
+# disk-space conservation. Also adds the demo-images layer those tools come from,
+# so call this from within the build environment.
 slint_demo_configure_local_conf() {
     local conf="$1"
+    slint_demo_add_layer_if_missing "$SLINT_DEMO_LAYER_DIR"
     cat >> "$conf" <<'EOF'
 
 # --- Slint demo image: shared configuration (scripts/demo-images/common.sh) ---
@@ -48,6 +54,10 @@ PACKAGECONFIG:append:pn-slint-cpp = " backend-linuxkms renderer-skia system-test
 
 # The demo images don't ship an SBOM; skip SPDX generation.
 INHERIT:remove = "create-spdx"
+
+# uv, to install Python packages on the target. Its recipe lives in the
+# demo-images layer rather than in meta-slint, so the image recipes can't list it.
+IMAGE_INSTALL:append = " uv-bin"
 
 # --- Disk-space conservation ---
 
