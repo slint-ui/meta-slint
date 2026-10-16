@@ -25,6 +25,10 @@ IMAGE_FEATURES += "ssh-server-openssh"
 IMAGE_FEATURES += "tools-debug"
 CORE_IMAGE_EXTRA_INSTALL += "perf powertop systemtap blktrace"
 
+# Python with the full standard library, so the packages installed with uv
+# (which the demo-image builds add) find the modules they expect.
+CORE_IMAGE_EXTRA_INSTALL += "python3 python3-modules"
+
 # The launcher is the boot entry point (autostarts via slint-launcher.service)
 # and RDEPENDS the demos + viewer it launches, so installing it pulls them in.
 # kernel-modules pulls in the loadable display/DRM modules so the KMS path (and

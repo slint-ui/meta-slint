@@ -20,6 +20,10 @@ IMAGE_FEATURES += "ssh-server-dropbear"
 IMAGE_FEATURES += "tools-debug"
 CORE_IMAGE_EXTRA_INSTALL += "perf powertop systemtap blktrace"
 
+# Python with the full standard library, so the packages installed with uv
+# (which the demo-image builds add) find the modules they expect.
+CORE_IMAGE_EXTRA_INSTALL += "python3 python3-modules"
+
 # Just the demos (+ fonts), none of the dev framework st-example-image-slint
 # pulls in, to keep the image and its flashing bundle small.
 # The launcher is the boot entry point (autostarts via slint-launcher.service),

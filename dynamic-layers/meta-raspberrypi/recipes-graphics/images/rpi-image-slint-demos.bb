@@ -14,6 +14,10 @@ IMAGE_FEATURES += "ssh-server-dropbear"
 IMAGE_FEATURES += "tools-debug"
 CORE_IMAGE_EXTRA_INSTALL += "perf powertop systemtap blktrace"
 
+# Python with the full standard library, so the packages installed with uv
+# (which the demo-image builds add) find the modules they expect.
+CORE_IMAGE_EXTRA_INSTALL += "python3 python3-modules"
+
 # The launcher is the boot entry point: it autostarts (slint-launcher.service),
 # presents a menu, and launches the demos / remote viewer. It RDEPENDS slint-demos
 # and slint-viewer, so installing it pulls them in as the launchable binaries.

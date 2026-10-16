@@ -25,6 +25,10 @@ LICENSE = "MIT"
 IMAGE_FEATURES += "tools-debug"
 IMAGE_INSTALL += "perf powertop systemtap blktrace"
 
+# Python with the full standard library, so the packages installed with uv
+# (which the demo-image builds add) find the modules they expect.
+IMAGE_INSTALL += "python3 python3-modules"
+
 # The launcher is the boot entry point (autostarts via slint-launcher.service)
 # and RDEPENDS the demos + viewer it launches, so installing it pulls them in.
 # The i.MX 8M Mini has a Vivante GC NanoUltra GPU; Slint's Skia renderer loads
