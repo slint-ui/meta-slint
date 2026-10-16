@@ -155,6 +155,11 @@ the host, and passes the target's flags to bindgen. The binaries end up in `targ
 
 ## Demo Images
 
+The `*-image-slint-demos` images boot into the Slint demo launcher, a menu that discovers and runs the
+installed demos. A demo started from the launcher takes over the whole screen. On a touchscreen that
+tracks at least four fingers, swipe down from the top edge of the screen with four fingers to quit the
+demo and return to the launcher.
+
 ### STM32 MPU OpenSTLinux
 
 When building for [STM32 MPU OpenSTLinux](https://www.st.com/en/embedded-software/stm32-mpu-openstlinux-distribution.html),

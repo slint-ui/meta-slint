@@ -1,0 +1,12 @@
+[package]
+name = "slint-launcher-gesture"
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+description = "Returns to the Slint demo launcher with a four-finger swipe down from the top edge"
+publish = false
+
+[dependencies]
+# libinput 1.19, as in kirkstone, the oldest release the layer supports.
+input = { version = "0.10", default-features = false, features = ["udev", "libinput_1_19"] }
+libc = "0.2"

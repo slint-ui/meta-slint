@@ -1,0 +1,13 @@
+[Unit]
+Description=Return to the Slint demo launcher with a four-finger swipe down from the top edge
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=/usr/bin/slint-launcher-gesture
+# It is the only way back from a demo to the launcher: never give up on
+# restarting it, but don't spin if it keeps failing.
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

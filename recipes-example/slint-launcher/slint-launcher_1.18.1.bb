@@ -16,8 +16,10 @@ inherit slint_rust
 inherit slint_git_source
 
 # The launcher discovers and execs the demo binaries on PATH and offers a
-# "remote viewer" entry, so both must be installed alongside it.
-RDEPENDS:${PN}:class-target += "slint-demos slint-viewer"
+# "remote viewer" entry, so both must be installed alongside it. With the demo
+# replacing the launcher on LinuxKMS, slint-launcher-gesture provides the way
+# back: a four-finger swipe down from the top edge.
+RDEPENDS:${PN}:class-target += "slint-demos slint-viewer slint-launcher-gesture"
 
 # The demos live in their own cargo workspace (demos/), separate from the repo
 # root -- so build the launcher package from that manifest, not the root (a plain
