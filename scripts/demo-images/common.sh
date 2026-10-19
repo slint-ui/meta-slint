@@ -59,6 +59,8 @@ INHERIT:remove = "create-spdx"
 # recipes live in the demo-images layer rather than in meta-slint, so the image
 # recipes can't list them.
 IMAGE_INSTALL:append = " uv-bin nodejs-bin nodejs-bin-npm"
+# pnpm has no 32-bit Arm build, so the STM32MP1 goes without it.
+IMAGE_INSTALL:append:aarch64 = " pnpm-bin"
 
 # --- Disk-space conservation ---
 
