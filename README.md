@@ -157,8 +157,8 @@ the host, and passes the target's flags to bindgen. The binaries end up in `targ
 
 The demo image targets below include Python. The prebuilt images that Slint's CI publishes also
 ship [uv](https://docs.astral.sh/uv/) to install Python packages on the target, as well as Node.js
-and npm; their recipes live in the `scripts/demo-images/meta-slint-demo-images` layer, which only
-the CI build scripts add.
+and npm, plus [pnpm](https://pnpm.io/) on the 64-bit boards; their recipes live in the
+`scripts/demo-images/meta-slint-demo-images` layer, which only the CI build scripts add.
 
 ### STM32 MPU OpenSTLinux
 
