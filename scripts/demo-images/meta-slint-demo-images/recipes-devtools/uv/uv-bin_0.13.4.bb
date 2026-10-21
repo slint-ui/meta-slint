@@ -22,8 +22,8 @@ COMPATIBLE_HOST:libc-musl = "null"
 # up in the default S on every release: under UNPACKDIR on walnascar+, and
 # under WORKDIR on scarthgap, whose bitbake has no UNPACKDIR.
 SRC_URI = "https://github.com/astral-sh/uv/releases/download/${PV}/uv-${UV_TARGET}.tar.gz;name=${UV_TARGET};subdir=${BP};striplevel=1"
-SRC_URI[aarch64-unknown-linux-gnu.sha256sum] = "9041c73c99fdc5892cf128140beb354eca9231d502068cc36e6cb53a8e59ad14"
-SRC_URI[armv7-unknown-linux-gnueabihf.sha256sum] = "833bb2b4a47ba2aa4356e577eb52be2deb15d145d79e559dfe8fcc3bf546017b"
+SRC_URI[aarch64-unknown-linux-gnu.sha256sum] = "1ae72b4718729e2ccc4f1ae2c6d1e531ca8467800e0546e9130b3886023a60ab"
+SRC_URI[armv7-unknown-linux-gnueabihf.sha256sum] = "9e52201e4502e349f27020879283736ca184185363ec8328554fd26596e61eb8"
 
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
