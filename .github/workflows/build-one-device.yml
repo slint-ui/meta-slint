@@ -192,6 +192,10 @@ jobs:
           # print them. One per board: the BSP lines differ, so the packages do too.
           RZG3E_GRAPHICS_URL: ${{ secrets.NEXTCLOUD_URL_RZG3E_BSP_GRAPHICS }}
           RZG3L_GRAPHICS_URL: ${{ secrets.NEXTCLOUD_URL_RZG3L_BSP_GRAPHICS }}
+          # Download URL of our copy of TI's oe-layersetup, for when git.ti.com is
+          # unreachable (see ti-common.sh). The archive isn't licensed material,
+          # but the share link is kept out of the repository all the same.
+          TI_OE_LAYERSETUP_ARCHIVE_URL: ${{ secrets.NEXTCLOUD_URL_TI_OE_LAYERSETUP }}
         run: |
           # sstate lives directly on the shared Volume: bitbake restores from and
           # writes to it in place (the model main uses, where restore works). The
@@ -206,6 +210,7 @@ jobs:
           case "${{ inputs.device }}" in
             rzg3e) SECRET_URL="${RZG3E_GRAPHICS_URL:-}" ;;
             rzg3l) SECRET_URL="${RZG3L_GRAPHICS_URL:-}" ;;
+            am62px|am62l) SECRET_URL="${TI_OE_LAYERSETUP_ARCHIVE_URL:-}" ;;
             *)     SECRET_URL="" ;;
           esac
           if [ -n "$SECRET_URL" ]; then
@@ -221,6 +226,7 @@ jobs:
             ARTIFACT_BASENAME='${{ inputs.device }}-slint-demo' \
             SSTATE_DIR='${SSTATE_DIR}' \
             GRAPHICS_URL_FILE='${SECRET_URL_FILE}' \
+            OE_LAYERSETUP_ARCHIVE_URL_FILE='${SECRET_URL_FILE}' \
             meta-slint/scripts/demo-images/${{ inputs.device }}.sh"
           build_rc=$?
           set -e
