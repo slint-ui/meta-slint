@@ -8,6 +8,6 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=093007ec281bbdeea447b0040b01a74d"
 
 # v1.15.0 tag
 SLINT_REV = "7d81af4fb68b20ccb4f18e8b0a34e6c7943d571e"
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1.15;rev=${SLINT_REV}"
 
 EXTRA_OECMAKE:append = " -DSLINT_FEATURE_GETTEXT=ON"

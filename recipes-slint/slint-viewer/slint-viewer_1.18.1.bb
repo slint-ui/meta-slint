@@ -15,7 +15,7 @@ LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eddf02df1cb330c56cc727e9e3a379c9"
 
 # v1.18.1 tag (same revision as slint-cpp_1.18.1)
 SLINT_REV = "372cf0ee5577c3dfec309a45e7b778ba4e81b734"
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1;rev=${SLINT_REV}"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1.18;rev=${SLINT_REV}"
 
 # Same renderer and backend as the slint-demos recipe. The viewer forwards its
 # own backend-linuxkms and renderer-skia features to slint, so let slint_rust
