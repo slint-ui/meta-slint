@@ -13,9 +13,9 @@ BUGTRACKER = "https://github.com/slint-ui/slint/issues"
 LICENSE = "GPL-3.0-only | Slint-Commercial"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eddf02df1cb330c56cc727e9e3a379c9"
 
-# v1.18.1 tag (same revision as slint-cpp_1.18.1)
-SLINT_REV = "372cf0ee5577c3dfec309a45e7b778ba4e81b734"
-SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1.18;rev=${SLINT_REV}"
+# v1.19.0 tag (same revision as slint-cpp_1.19.0)
+SLINT_REV = "e436f546f71481d786cbc2a74316b1be1ef678c1"
+SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1.19;rev=${SLINT_REV}"
 
 # Same renderer and backend as the slint-demos recipe. The viewer forwards its
 # own backend-linuxkms and renderer-skia features to slint, so let slint_rust
