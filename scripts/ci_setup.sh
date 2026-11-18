@@ -11,8 +11,19 @@ git clone -b master https://git.openembedded.org/bitbake
 
 # poky-with-sstate bundles the sstate CDN mirror fragment, so we inherit
 # BB_HASHSERVE_UPSTREAM + SSTATE_MIRRORS automatically.
-./bitbake/bin/bitbake-setup init --non-interactive \
-    poky-wrynose poky-with-sstate distro/poky machine/qemuarm64
+# git.openembedded.org occasionally stalls mid-clone and the fetch fails, so
+# retry from a clean slate a few times before giving up.
+for attempt in 1 2 3; do
+    if ./bitbake/bin/bitbake-setup init --non-interactive \
+        poky-wrynose poky-with-sstate distro/poky machine/qemuarm64; then
+        break
+    fi
+    if [ "$attempt" = 3 ]; then
+        exit 1
+    fi
+    rm -rf bitbake-builds
+    sleep 30
+done
 
 # bitbake-setup lands the build under bitbake-builds/poky-wrynose/ (setup-dir-name
 # "$distro-wrynose" with distro/poky). Drop our extra layers alongside the ones it
