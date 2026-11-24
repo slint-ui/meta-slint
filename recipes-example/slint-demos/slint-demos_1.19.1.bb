@@ -1,7 +1,7 @@
-# Pinned to a release (not master): the demos get reshuffled on master. v1.19.0 tag.
-SLINT_REV = "e436f546f71481d786cbc2a74316b1be1ef678c1"
+# Pinned to a release (not master): the demos get reshuffled on master. v1.19.1 tag.
+SLINT_REV = "5d235f5fbf237c74d18c1c6af4dd1821fe46acd0"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1.19;rev=${SLINT_REV}"
-SRC_URI += "file://0001-WIP-v-1-19-0-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
+SRC_URI += "file://0001-WIP-v-1-19-1-Use-a-patched-gettext-to-avoid-cross-compiling-g.patch"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eddf02df1cb330c56cc727e9e3a379c9"
 
 SUMMARY = "Various Rust-based demos of Slint packaged up in /usr/bin"
