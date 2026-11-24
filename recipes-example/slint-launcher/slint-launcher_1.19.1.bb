@@ -1,6 +1,6 @@
 # Pinned to the same revision as the slint-demos and slint-viewer recipes
-# (v1.19.0), which carries demos/launcher.
-SLINT_REV = "e436f546f71481d786cbc2a74316b1be1ef678c1"
+# (v1.19.1), which carries demos/launcher.
+SLINT_REV = "5d235f5fbf237c74d18c1c6af4dd1821fe46acd0"
 SRC_URI = "git://github.com/slint-ui/slint.git;protocol=https;branch=release/1.19;rev=${SLINT_REV}"
 SRC_URI += "file://slint-launcher.service"
 LIC_FILES_CHKSUM = "file://LICENSE.md;md5=eddf02df1cb330c56cc727e9e3a379c9"
