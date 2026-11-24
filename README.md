@@ -160,6 +160,12 @@ ship [uv](https://docs.astral.sh/uv/) to install Python packages on the target, 
 and npm, plus [pnpm](https://pnpm.io/) on the 64-bit boards; their recipes live in the
 `scripts/demo-images/meta-slint-demo-images` layer, which only the CI build scripts add.
 
+That layer also distrusts the "emSign ECC Root CA - G3" and "Comodo AAA Services root" certificates in
+`ca-certificates`, because eMudhra's compromised intermediate CAs chain up to them. OE-core has the same fix
+on master, but the BSP releases the CI builds with predate it. If you build your own image with
+`meta-slint`, take this fix from your OE-core, or apply the layer's
+`recipes-support/ca-certificates` bbappend to your build.
+
 ### STM32 MPU OpenSTLinux
 
 When building for [STM32 MPU OpenSTLinux](https://www.st.com/en/embedded-software/stm32-mpu-openstlinux-distribution.html),
