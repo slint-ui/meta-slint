@@ -10,8 +10,71 @@
 # wrynose OE series (matches meta-slint on the dev branch).
 #
 # Env: MACHINE, BOARD_DESC, META_SLINT_DIR (required); TI_OECONFIG,
-# OE_LAYERSETUP_URL, META_CLANG_BRANCH, IMAGE, WORK_ROOT, ARTIFACT_DIR,
-# SSTATE_DIR (optional).
+# OE_LAYERSETUP_URL, OE_LAYERSETUP_REV, OE_LAYERSETUP_ARCHIVE_URL or
+# OE_LAYERSETUP_ARCHIVE_URL_FILE, META_CLANG_BRANCH, IMAGE, WORK_ROOT,
+# ARTIFACT_DIR, SSTATE_DIR (optional).
+
+# The oe-layersetup commit to build with; it must carry TI_OECONFIG. Bump it
+# together with TI_OECONFIG, and rebuild the fallback archive with
+# make-ti-layersetup-archive.sh, which prints the new checksum for below.
+SLINT_DEMO_TI_LAYERSETUP_REV="a5d7c4cb5afdee8300dc7ce2d6b7d64e23599b0b"
+SLINT_DEMO_TI_LAYERSETUP_ARCHIVE_SHA256="2c4d5070db997eb055bda596a2dd0167bf78c81925e2dc577a321c5639382c71"
+
+# Fetch oe-layersetup into <dir> at <rev>. It's the one thing the setup needs
+# from git.ti.com (the layers in TI's config are hosted elsewhere), and
+# git.ti.com is at times unreachable for hours. So if the clone fails, unpack
+# the same commit from an archive kept on our Nextcloud, whose URL is a
+# repository secret. The URL is never printed: on failure we report the curl
+# exit code only.
+_slint_demo_ti_fetch_layersetup() {
+    local dir="$1" url="$2" rev="$3"
+    # oe-layersetup doesn't need its own git history, so an unpacked archive
+    # (no .git) counts as fetched too.
+    [ -x "$dir/oe-layertool-setup.sh" ] && return 0
+
+    if git clone "$url" "$dir" && git -C "$dir" checkout --detach "$rev"; then
+        return 0
+    fi
+    echo "::warning::could not fetch oe-layersetup from $url at $rev; using the archive instead"
+    rm -rf "$dir"
+
+    local archive_url="${OE_LAYERSETUP_ARCHIVE_URL:-}"
+    if [ -n "${OE_LAYERSETUP_ARCHIVE_URL_FILE:-}" ] && [ -r "${OE_LAYERSETUP_ARCHIVE_URL_FILE}" ]; then
+        archive_url="$(cat "$OE_LAYERSETUP_ARCHIVE_URL_FILE")"
+    fi
+    if [ -z "$archive_url" ]; then
+        echo "::error::the oe-layersetup archive URL is not set (see the TI archive URL secret in the workflow)"
+        return 1
+    fi
+    if [ "$rev" != "$SLINT_DEMO_TI_LAYERSETUP_REV" ]; then
+        echo "::error::the oe-layersetup archive holds $SLINT_DEMO_TI_LAYERSETUP_REV, not the requested $rev"
+        return 1
+    fi
+
+    local archive="$dir.tar.gz"
+    # Deliberately quiet: curl's messages can echo the URL, which is a secret.
+    if ! curl --fail --silent --show-error --location \
+            -o "$archive" "$archive_url" 2>/dev/null; then
+        echo "::error::could not download the oe-layersetup archive (curl failed; URL withheld). Check the TI archive URL secret."
+        return 1
+    fi
+    # Pinned checksum: catches a truncated download or a share link that serves
+    # an HTML page instead of the file.
+    if ! echo "${SLINT_DEMO_TI_LAYERSETUP_ARCHIVE_SHA256}  ${archive}" | sha256sum -c - >/dev/null 2>&1; then
+        echo "::error::the downloaded oe-layersetup archive does not match the expected checksum."
+        echo "  expected sha256: ${SLINT_DEMO_TI_LAYERSETUP_ARCHIVE_SHA256}"
+        echo "  actual   sha256: $(sha256sum "$archive" | cut -d' ' -f1)"
+        rm -f "$archive"
+        return 1
+    fi
+    # The archive's top-level directory is oe-layersetup/.
+    tar -xzf "$archive" -C "$(dirname "$dir")"
+    rm -f "$archive"
+    [ -x "$dir/oe-layertool-setup.sh" ] || {
+        echo "::error::the oe-layersetup archive has no oe-layersetup/oe-layertool-setup.sh"
+        return 1
+    }
+}
 
 slint_demo_build_ti() {
     local machine="${MACHINE:?set by the caller, e.g. am62pxx-evm}"
@@ -19,6 +82,7 @@ slint_demo_build_ti() {
     local image="${IMAGE:-ti-image-slint-demos}"
     local meta_slint_dir="${META_SLINT_DIR:?set by the caller}"
     local oe_layersetup_url="${OE_LAYERSETUP_URL:-https://git.ti.com/git/arago-project/oe-layersetup.git}"
+    local oe_layersetup_rev="${OE_LAYERSETUP_REV:-$SLINT_DEMO_TI_LAYERSETUP_REV}"
     local ti_oeconfig="${TI_OECONFIG:-configs/processor-sdk/processor-sdk-master-12.00.00.07.04-config.txt}"
     # meta-clang has to follow the OE the SDK pins, not OE master. master moved
     # on to an oe.utils without all_multilib_tune_values, which the layer's own
@@ -44,7 +108,7 @@ slint_demo_build_ti() {
     # Fetch the BSP via TI's oe-layersetup (pinned Processor SDK revisions). It
     # clones the layers under <setup>/sources and writes <setup>/build.
     local setup="$work_root/oe-layersetup"
-    [ -d "$setup/.git" ] || git clone "$oe_layersetup_url" "$setup"
+    _slint_demo_ti_fetch_layersetup "$setup" "$oe_layersetup_url" "$oe_layersetup_rev"
     ( cd "$setup" && ./oe-layertool-setup.sh -f "$ti_oeconfig" )
 
     # conf/setenv sources oe-init-build-env; run it in this shell (relaxing strict
